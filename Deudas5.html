@@ -16,7 +16,30 @@
             --success: #10b981;
             --border: #e2e8f0;
             --purple: #8b5cf6;
+            --row-hover: #f8faff;
         }
+
+        body.dark {
+            --primary: #60a5fa;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #f1f5f9;
+            --text-light: #94a3b8;
+            --danger: #f87171;
+            --warning: #fbbf24;
+            --success: #34d399;
+            --border: #334155;
+            --purple: #a78bfa;
+            --row-hover: #263349;
+        }
+        body.dark .form-control { background: #0f172a; color: var(--text); border-color: var(--border); }
+        body.dark select.form-control { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); }
+        body.dark .dropdown-content { background: #1e293b; }
+        body.dark .modal { background: #1e293b; }
+        body.dark .btn-outline { border-color: var(--border); color: var(--text); background: transparent; }
+        body.dark .day-label { background: #0f172a; border-color: var(--border); color: var(--text); }
+        body.dark tr:hover td { background: var(--row-hover); }
+        body.dark .undo-bar { background: #263349; }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
         body { background-color: var(--bg); color: var(--text); padding: 16px; -webkit-tap-highlight-color: transparent; }
@@ -82,9 +105,11 @@
         /* TABLA */
         .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; }
         table { width: 100%; border-collapse: collapse; margin-top: 14px; min-width: 750px; }
-        th, td { padding: 11px 10px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.875rem; vertical-align: middle; }
+        th, td { padding: 14px 10px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.875rem; vertical-align: middle; }
+        td:last-child { white-space: nowrap; }
         th { color: var(--text-light); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
-        tr:hover td { background: #f8faff; }
+        tr:hover td { background: var(--row-hover); }
+        tr { height: 64px; }
 
         .badge { padding: 4px 9px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
         .badge.pendiente { background: #e0f2fe; color: #0369a1; }
@@ -93,8 +118,9 @@
         .badge.pagado { background: #d1fae5; color: #047857; }
         .badge.recurrente { background: #f3e8ff; color: #6b21a8; }
 
-        .actions { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
-        .actions button { padding: 6px 9px; font-size: 0.77rem; }
+        .actions { display: flex; gap: 5px; flex-wrap: nowrap; align-items: center; justify-content: flex-start; height: 100%; }
+        .actions button { padding: 7px 10px; font-size: 0.77rem; min-width: 36px; height: 34px; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }
+        td.actions { vertical-align: middle; padding-top: 0; padding-bottom: 0; }
 
         /* DROPDOWN CATEGORIAS */
         .dropdown-wrapper { position: relative; }
@@ -177,7 +203,10 @@
 <div class="container">
     <header>
         <h1>💳 Control de Deudas</h1>
-        <button class="btn" onclick="showSection('form')">+ Nuevo Registro</button>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <button class="btn btn-outline" id="darkModeBtn" onclick="toggleDarkMode()" title="Cambiar modo claro/oscuro" style="font-size:1.1rem; padding:8px 12px;">🌙</button>
+            <button class="btn" onclick="showSection('form')">+ Nuevo Registro</button>
+        </div>
     </header>
 
     <nav>
@@ -403,6 +432,29 @@
     </div>
 </div>
 
+<!-- MODAL CONFIRMACIÓN DE PAGO -->
+<div class="modal-overlay" id="confirmModal">
+    <div class="modal" style="max-width:360px; text-align:center;">
+        <div style="font-size:2rem; margin-bottom:10px;" id="confirm-icon">💳</div>
+        <h3 id="confirm-title" style="text-align:center; margin-bottom:10px;">Confirmar Pago</h3>
+        <p id="confirm-msg" style="color:var(--text-light); font-size:0.93rem; margin-bottom:22px; line-height:1.5;"></p>
+        <div class="modal-footer" style="justify-content:center;">
+            <button class="btn btn-success" id="confirm-yes" style="flex:1;">✔ CONFIRMAR PAGO</button>
+            <button class="btn" id="confirm-no" style="flex:1; background:var(--danger);">✖ NO CONFIRMAR</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL ÉXITO DE PAGO -->
+<div class="modal-overlay" id="successModal">
+    <div class="modal" style="max-width:320px; text-align:center;">
+        <div style="font-size:2.5rem; margin-bottom:10px;">✅</div>
+        <h3 id="success-title" style="text-align:center; margin-bottom:8px; color:var(--success);">¡Pago Registrado!</h3>
+        <p id="success-msg" style="color:var(--text-light); font-size:0.93rem; margin-bottom:22px; line-height:1.5;"></p>
+        <button class="btn btn-outline" onclick="cerrarSuccessModal()" style="width:100%; justify-content:center;">Cerrar</button>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -421,9 +473,24 @@ const MAX_HISTORY = 50;
 let editingId = null;
 
 // ============================================================
+//  MODO OSCURO
+// ============================================================
+function toggleDarkMode() {
+    const isDark = document.body.classList.toggle('dark');
+    localStorage.setItem('darkMode', isDark ? '1' : '0');
+    document.getElementById('darkModeBtn').textContent = isDark ? '☀️' : '🌙';
+}
+
+// ============================================================
 //  INICIALIZACIÓN
 // ============================================================
 function init() {
+    // Restaurar modo oscuro
+    if (localStorage.getItem('darkMode') === '1') {
+        document.body.classList.add('dark');
+        document.getElementById('darkModeBtn').textContent = '☀️';
+    }
+
     const saved = localStorage.getItem('debts');
     if (saved) {
         try {
@@ -767,71 +834,146 @@ function guardarEdicion() {
 }
 
 // ============================================================
+//  MODAL DE CONFIRMACIÓN (reemplaza confirm() nativo)
+// ============================================================
+let _confirmCallback = null;
+
+function showConfirm(icon, title, msg, onYes) {
+    document.getElementById('confirm-icon').textContent = icon;
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-msg').textContent = msg;
+    _confirmCallback = onYes;
+    document.getElementById('confirmModal').classList.add('open');
+}
+
+function cerrarConfirmModal() {
+    document.getElementById('confirmModal').classList.remove('open');
+    _confirmCallback = null;
+}
+
+function cerrarSuccessModal() {
+    document.getElementById('successModal').classList.remove('open');
+}
+
+function showSuccess(title, msg) {
+    document.getElementById('success-title').textContent = title;
+    document.getElementById('success-msg').textContent = msg;
+    document.getElementById('successModal').classList.add('open');
+}
+
+// Botones del modal de confirmación — registrados una sola vez
+document.getElementById('confirm-yes').addEventListener('click', function() {
+    const fn = _confirmCallback;
+    document.getElementById('confirmModal').classList.remove('open');
+    _confirmCallback = null;
+    if (typeof fn === 'function') fn();
+});
+document.getElementById('confirm-no').addEventListener('click', function() {
+    document.getElementById('confirmModal').classList.remove('open');
+    _confirmCallback = null;
+});
+document.getElementById('confirmModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        document.getElementById('confirmModal').classList.remove('open');
+        _confirmCallback = null;
+    }
+});
+document.getElementById('successModal').addEventListener('click', function(e) {
+    if (e.target === this) cerrarSuccessModal();
+});
+
+// ============================================================
 //  ACCIONES DE PAGO
 // ============================================================
 function marcarPagado(id) {
-    if (!confirm('¿Confirmas el pago total de esta deuda?')) return;
     const debt = debts.find(d => d.id === id);
-    if (debt) {
-        debt.pagado = debt.monto;
-        debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
-        pushHistory(`Pagar: ${debt.nombre}`);
-        persistDebts();
-        updateUI();
-    }
+    if (!debt) return;
+    showConfirm('💳', 'Confirmar Pago Total',
+        `¿Confirmas el pago total de "${debt.nombre}" por ${formatMoney(debt.monto)}?`,
+        () => {
+            debt.pagado = debt.monto;
+            debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
+            pushHistory(`Pagar: ${debt.nombre}`);
+            persistDebts();
+            updateUI();
+            showSuccess('¡Deuda Liquidada!', `"${debt.nombre}" ha sido marcada como pagada completamente.`);
+        }
+    );
 }
 
 function pagarPlazoMensual(id) {
-    if (!confirm('¿Confirmas el pago de esta mensualidad?')) return;
     const debt = debts.find(d => d.id === id);
-    if (debt && debt.mesesPagados < debt.mesesTotal) {
-        debt.mesesPagados++;
-        let date = new Date(debt.fechaLimite + 'T00:00:00');
-        date.setMonth(date.getMonth() + 1);
-        debt.fechaLimite = date.toISOString().split('T')[0];
-        debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
-        pushHistory(`Plazo: ${debt.nombre}`);
-        persistDebts();
-        updateUI();
-    }
+    if (!debt || debt.mesesPagados >= debt.mesesTotal) return;
+    const pagoNum = debt.mesesPagados + 1;
+    const cuota = debt.monto / debt.mesesTotal;
+    showConfirm('📅', `Pago ${pagoNum} de ${debt.mesesTotal}`,
+        `¿Confirmas el pago ${pagoNum} de ${debt.mesesTotal} de "${debt.nombre}"?\nMonto: ${formatMoney(cuota)}`,
+        () => {
+            debt.mesesPagados++;
+            let date = new Date(debt.fechaLimite + 'T00:00:00');
+            date.setMonth(date.getMonth() + 1);
+            debt.fechaLimite = date.toISOString().split('T')[0];
+            debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
+            pushHistory(`Plazo: ${debt.nombre}`);
+            persistDebts();
+            updateUI();
+            const quedan = debt.mesesTotal - debt.mesesPagados;
+            const msg = quedan > 0
+                ? `Pago ${debt.mesesPagados} de ${debt.mesesTotal} registrado correctamente. Faltan ${quedan} pagos.`
+                : `¡Felicidades! Completaste todos los pagos de "${debt.nombre}".`;
+            showSuccess(`✔ Pago ${debt.mesesPagados} de ${debt.mesesTotal}`, msg);
+        }
+    );
 }
 
 function avanzarMesServicio(id) {
-    if (!confirm('¿Confirmas el pago de este servicio mensual?')) return;
     const debt = debts.find(d => d.id === id);
-    if (debt) {
-        let date = new Date(debt.fechaLimite + 'T00:00:00');
-        date.setMonth(date.getMonth() + 1);
-        debt.fechaLimite = date.toISOString().split('T')[0];
-        debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
-        pushHistory(`Servicio: ${debt.nombre}`);
-        persistDebts();
-        updateUI();
-    }
+    if (!debt) return;
+    showConfirm('🔄', 'Registrar Pago de Servicio',
+        `¿Confirmas el pago de "${debt.nombre}" por ${formatMoney(debt.monto)} este mes?`,
+        () => {
+            let date = new Date(debt.fechaLimite + 'T00:00:00');
+            date.setMonth(date.getMonth() + 1);
+            debt.fechaLimite = date.toISOString().split('T')[0];
+            debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
+            pushHistory(`Servicio: ${debt.nombre}`);
+            persistDebts();
+            updateUI();
+            showSuccess('¡Pago Registrado!', `El pago de "${debt.nombre}" fue registrado. Próximo corte: ${debt.fechaLimite}`);
+        }
+    );
 }
 
 function registrarCompra(id) {
     const debt = debts.find(d => d.id === id);
-    if (debt) {
-        debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
-        pushHistory(`Compra: ${debt.nombre}`);
-        persistDebts();
-        updateUI();
-        showToast('🛒 Compra registrada', 'success');
-    }
+    if (!debt) return;
+    showConfirm('🛒', 'Registrar Compra',
+        `¿Confirmas la compra de "${debt.nombre}" por ${formatMoney(debt.monto)}?`,
+        () => {
+            debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
+            pushHistory(`Compra: ${debt.nombre}`);
+            persistDebts();
+            updateUI();
+            showSuccess('🛒 Compra Registrada', `La compra de "${debt.nombre}" fue registrada correctamente.`);
+        }
+    );
 }
 
 function eliminarDeuda(id) {
     const debt = debts.find(d => d.id === id);
     if (!debt) return;
-    if (!confirm(`¿Eliminar permanentemente "${debt.nombre}"?`)) return;
-    const nombre = debt.nombre;
-    debts = debts.filter(d => d.id !== id);
-    pushHistory(`Eliminar: ${nombre}`);
-    persistDebts();
-    renderCategoryFilters();
-    updateUI();
-    showToast(`🗑 "${nombre}" eliminado`);
+    showConfirm('🗑', 'Eliminar Registro',
+        `¿Eliminar permanentemente "${debt.nombre}"? Esta acción no se puede deshacer desde aquí.`,
+        () => {
+            const nombre = debt.nombre;
+            debts = debts.filter(d => d.id !== id);
+            pushHistory(`Eliminar: ${nombre}`);
+            persistDebts();
+            renderCategoryFilters();
+            updateUI();
+            showToast(`🗑 "${nombre}" eliminado`);
+        }
+    );
 }
 
 // ============================================================
@@ -877,26 +1019,28 @@ function importarJSON(event) {
                 showToast('⚠ El archivo no contiene deudas', 'error'); return;
             }
 
-            const action = confirm(
-                `Se encontraron ${imported.length} registro(s).\n\n` +
-                `¿Deseas REEMPLAZAR tu lista actual?\n` +
-                `(Cancela para AGREGAR al final de tu lista existente)`
+            // Usar modal en lugar de confirm() nativo
+            showConfirm('📂', 'Importar Lista',
+                `Se encontraron ${imported.length} registro(s). ¿Deseas REEMPLAZAR tu lista actual? (Pulsa NO CONFIRMAR para AGREGAR al final de tu lista existente)`,
+                () => { debts = imported; finish(); }
             );
-
-            if (action) {
-                debts = imported;
-            } else {
+            // Sobreescribir el botón NO para que agregue en lugar de cancelar
+            document.getElementById('confirm-no').onclick = function() {
+                cerrarConfirmModal();
                 const existingIds = new Set(debts.map(d => d.id));
-                imported.forEach(d => {
-                    if (!existingIds.has(d.id)) debts.push(d);
-                });
-            }
+                imported.forEach(d => { if (!existingIds.has(d.id)) debts.push(d); });
+                finish();
+                // Restaurar comportamiento normal del botón
+                document.getElementById('confirm-no').onclick = cerrarConfirmModal;
+            };
 
-            pushHistory('Importar archivo');
-            persistDebts();
-            renderCategoryFilters();
-            updateUI();
-            showToast(`✔ ${imported.length} registro(s) importado(s)`, 'success');
+            function finish() {
+                pushHistory('Importar archivo');
+                persistDebts();
+                renderCategoryFilters();
+                updateUI();
+                showToast(`✔ ${imported.length} registro(s) importado(s)`, 'success');
+            }
         } catch(err) {
             showToast('⚠ El archivo no es válido', 'error');
         }
@@ -985,7 +1129,7 @@ function updateUI() {
 
         if (debt.tipo === 'unica') {
             const restante = debt.monto - (debt.pagado || 0);
-            detallesHTML = `Total: ${formatMoney(debt.monto)}<br><strong>Falta: ${formatMoney(restante)}</strong>`;
+            detallesHTML = `Total: ${formatMoney(debt.monto)}<br><strong>Falta: ${formatMoney(restante)}</strong><br><small style="color:var(--text-light);">Ahorro/sem: ${formatMoney(restante/4.3)}</small>`;
             if (status.class !== 'pagado')
                 actionBtn = `<button class="btn btn-success btn-sm" data-action="pagar" data-id="${debt.id}">✔ Pagar Todo</button>`;
 
@@ -1003,7 +1147,7 @@ function updateUI() {
             }
 
         } else if (debt.tipo === 'mensual') {
-            detallesHTML = `<strong style="color:var(--primary);">Costo: ${formatMoney(debt.monto)}/mes</strong>`;
+            detallesHTML = `<strong style="color:var(--primary);">Costo: ${formatMoney(debt.monto)}/mes</strong><br><small style="color:var(--text-light);">Ahorro/sem: ${formatMoney(debt.monto/4.3)}</small>`;
             const txt = isPaidThisMonth ? '✔ Mes Pagado' : '✔ Registrar Pago';
             actionBtn = `<button class="btn btn-purple btn-sm" ${isPaidThisMonth ? lockStyle : ''} data-action="servicio" data-id="${debt.id}">${txt}</button>`;
 
