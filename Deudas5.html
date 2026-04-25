@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Control de Deudas y Gastos</title>
     <style>
         :root {
@@ -18,72 +18,165 @@
             --purple: #8b5cf6;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background-color: var(--bg); color: var(--text); padding: 20px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding: 16px; -webkit-tap-highlight-color: transparent; }
         
         .container { max-width: 1100px; margin: 0 auto; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
-        h1 { font-size: 1.8rem; color: var(--primary); }
-        
-        .btn { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn:hover:not(:disabled) { opacity: 0.9; }
-        .btn:disabled { cursor: not-allowed; opacity: 0.8; }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        h1 { font-size: 1.5rem; color: var(--primary); }
+
+        /* BOTONES */
+        .btn {
+            background: var(--primary); color: white; border: none;
+            padding: 10px 14px; border-radius: 8px; cursor: pointer;
+            font-weight: 600; transition: 0.18s; font-size: 0.9rem;
+            display: inline-flex; align-items: center; gap: 5px;
+            -webkit-appearance: none; appearance: none;
+            touch-action: manipulation;
+        }
+        .btn:hover:not(:disabled) { opacity: 0.88; }
+        .btn:active:not(:disabled) { transform: scale(0.97); }
+        .btn:disabled { cursor: not-allowed; opacity: 0.55; }
+        .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
         .btn-success { background: var(--success); }
         .btn-danger { background: var(--danger); }
         .btn-purple { background: var(--purple); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-sm { padding: 6px 10px; font-size: 0.78rem; }
 
-        /* Dashboard */
-        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; align-items: stretch; }
-        .card { background: var(--surface); padding: 20px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; }
-        .card h3 { font-size: 0.9rem; color: var(--text-light); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
-        .card .amount { font-size: 1.6rem; font-weight: bold; }
+        /* NAV */
+        nav { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        nav .btn { flex: 1 1 auto; justify-content: center; min-width: 130px; }
+
+        /* DASHBOARD */
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+        .card { background: var(--surface); padding: 18px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.09); border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; }
+        .card h3 { font-size: 0.82rem; color: var(--text-light); margin-bottom: 6px; }
+        .card .amount { font-size: 1.45rem; font-weight: bold; }
         .text-danger { color: var(--danger); }
         .text-warning { color: var(--warning); }
         .text-primary { color: var(--primary); }
-        
-        /* Formularios y Vistas */
-        .section { background: var(--surface); padding: 20px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; display: none; }
+
+        /* SECCIONES */
+        .section { background: var(--surface); padding: 20px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.09); margin-bottom: 20px; display: none; }
         .section.active { display: block; }
         
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.9rem; }
-        .form-control { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; }
-        
-        .days-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
-        .day-label { display: flex; align-items: center; gap: 5px; background: var(--bg); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; }
-        .day-label input { accent-color: var(--primary); width: 16px; height: 16px; }
+        /* FORMULARIO */
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.88rem; }
+        .form-control {
+            width: 100%; padding: 11px 12px; border: 1.5px solid var(--border);
+            border-radius: 8px; font-size: 1rem; background: white; color: var(--text);
+            -webkit-appearance: none; appearance: none;
+            transition: border-color 0.18s;
+        }
+        .form-control:focus { outline: none; border-color: var(--primary); }
+        select.form-control { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
 
-        /* Tabla de deudas */
-        .table-responsive { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; min-width: 800px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: middle; }
-        th { color: var(--text-light); font-weight: 600; }
-        
-        .badge { padding: 4px 8px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+        /* DIAS */
+        .days-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+        .day-label { display: flex; align-items: center; gap: 6px; background: var(--bg); padding: 9px 13px; border-radius: 8px; border: 1.5px solid var(--border); cursor: pointer; font-size: 0.88rem; transition: 0.15s; }
+        .day-label:hover { border-color: var(--primary); background: #eff6ff; }
+        .day-label input { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
+
+        /* TABLA */
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 14px; min-width: 750px; }
+        th, td { padding: 11px 10px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.875rem; vertical-align: middle; }
+        th { color: var(--text-light); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+        tr:hover td { background: #f8faff; }
+
+        .badge { padding: 4px 9px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
         .badge.pendiente { background: #e0f2fe; color: #0369a1; }
         .badge.proximo { background: #fef3c7; color: #b45309; }
         .badge.vencido { background: #fee2e2; color: #b91c1c; }
         .badge.pagado { background: #d1fae5; color: #047857; }
-        .badge.recurrente { background: #f3e8ff; color: #6b21a8; } 
+        .badge.recurrente { background: #f3e8ff; color: #6b21a8; }
 
-        .actions { display: flex; gap: 5px; flex-wrap: wrap; }
-        .actions button { padding: 5px 10px; font-size: 0.8rem; margin-bottom: 2px;}
-        
-        nav { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .actions { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+        .actions button { padding: 6px 9px; font-size: 0.77rem; }
 
-        .dropdown-details { position: relative; display: inline-block; }
-        .dropdown-details summary { cursor: pointer; list-style: none; height: 100%; display: flex; align-items: center; }
-        .dropdown-details summary::-webkit-details-marker { display: none; }
-        .dropdown-details .dropdown-content { position: absolute; top: 110%; right: 0; background: white; border: 1px solid var(--border); padding: 15px; z-index: 10; width: max-content; min-width: 180px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 6px; max-height: 250px; overflow-y: auto; }
-        .dropdown-content label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; font-size: 0.9rem; }
+        /* DROPDOWN CATEGORIAS */
+        .dropdown-wrapper { position: relative; }
+        .dropdown-content {
+            display: none; position: absolute; top: calc(100% + 6px); left: 0;
+            background: white; border: 1.5px solid var(--border); padding: 12px;
+            z-index: 100; min-width: 200px; box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+            border-radius: 10px; max-height: 260px; overflow-y: auto;
+        }
+        .dropdown-wrapper.open .dropdown-content { display: block; }
+        .dropdown-content label { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; cursor: pointer; font-size: 0.88rem; padding: 3px 0; }
+        .dropdown-content label:last-child { margin-bottom: 0; }
+        .dropdown-content input[type=checkbox] { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
+
+        /* TOOLBAR LISTA */
+        .list-toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; align-items: center; }
+        .list-toolbar .search-wrap { flex: 1; min-width: 200px; }
+        .list-toolbar .btn-group { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+        /* UNDO/REDO BAR */
+        .undo-bar {
+            display: flex; align-items: center; gap: 8px;
+            background: #f1f5f9; border: 1.5px solid var(--border);
+            border-radius: 8px; padding: 8px 12px; margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .undo-bar span { font-size: 0.82rem; color: var(--text-light); flex: 1; }
+
+        /* MODAL EDICION */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.45); z-index: 999;
+            align-items: center; justify-content: center; padding: 16px;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: white; border-radius: 14px; padding: 24px;
+            width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        }
+        .modal h3 { font-size: 1.15rem; margin-bottom: 18px; color: var(--primary); }
+        .modal-footer { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+        .modal-footer .btn { flex: 1; justify-content: center; }
+
+        /* TOAST */
+        .toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+            background: #1e293b; color: white; padding: 12px 22px; border-radius: 10px;
+            font-size: 0.9rem; font-weight: 500; z-index: 9999;
+            transition: transform 0.3s ease, opacity 0.3s ease; opacity: 0;
+            white-space: nowrap; max-width: 90vw; text-align: center;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.success { background: #065f46; }
+        .toast.error { background: #7f1d1d; }
+
+        /* IMPORT/EXPORT */
+        .io-section { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+        /* RESPONSIVE MOBILE */
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            h1 { font-size: 1.25rem; }
+            .dashboard { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .card { padding: 14px; }
+            .card .amount { font-size: 1.2rem; }
+            nav .btn { font-size: 0.82rem; padding: 9px 10px; }
+            .section { padding: 14px; }
+            table { min-width: 680px; }
+            th, td { padding: 9px 7px; }
+            .modal { padding: 18px; }
+        }
+        @media (max-width: 380px) {
+            .dashboard { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>Control de Deudas y Gastos</h1>
+        <h1>💳 Control de Deudas</h1>
         <button class="btn" onclick="showSection('form')">+ Nuevo Registro</button>
     </header>
 
@@ -92,41 +185,36 @@
         <button class="btn btn-outline" onclick="showSection('list')">📋 Lista Completa</button>
     </nav>
 
+    <!-- ===== DASHBOARD ===== -->
     <main id="dashboard-section" class="section active">
         <h2>Resumen Financiero</h2>
         <br>
         <div class="dashboard">
             <div class="card">
-                <div>
-                    <h3>Total Deuda Fija Pendiente</h3>
-                    <div class="amount" id="dash-total">$0.00</div>
-                </div>
+                <h3>Total Deuda Fija Pendiente</h3>
+                <div class="amount" id="dash-total">$0.00</div>
             </div>
             <div class="card">
-                <div>
-                    <h3>Vencido / Atrasado</h3>
-                    <div class="amount text-danger" id="dash-vencido">$0.00</div>
-                </div>
+                <h3>Vencido / Atrasado</h3>
+                <div class="amount text-danger" id="dash-vencido">$0.00</div>
             </div>
             <div class="card" style="border-color: var(--purple);">
-                <div>
-                    <h3>Presupuesto Servicios (Mes)</h3>
-                    <div class="amount" style="color: var(--purple);" id="dash-servicios">$0.00</div>
-                </div>
+                <h3>Presupuesto Servicios (Mes)</h3>
+                <div class="amount" style="color: var(--purple);" id="dash-servicios">$0.00</div>
             </div>
-            <div class="card" style="border-color: var(--primary); padding-top: 15px;">
-                <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span id="label-month-total" style="font-size: 0.9rem; color: var(--text-light); font-weight: 600;">Total Pendiente del Mes:</span>
-                        <input type="month" id="monthSelector" class="form-control" style="width: auto; padding: 2px 5px; font-size: 0.8rem;" onchange="updateUI()">
+            <div class="card" style="border-color: var(--primary); padding-top: 13px;">
+                <div style="display:flex; flex-direction:column; gap:9px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span id="label-month-total" style="font-size:0.82rem; color:var(--text-light); font-weight:600;">Total Pendiente del Mes:</span>
+                        <input type="month" id="monthSelector" class="form-control" style="width:auto; padding:4px 8px; font-size:0.82rem;" onchange="updateUI()">
                     </div>
-                    <button class="btn btn-outline" style="font-size: 0.75rem; padding: 4px; border-radius: 4px; width: 100%; border-color: var(--primary); color: var(--primary);" onclick="clearMonthFilter()">Mostrar todas las deudas</button>
+                    <button class="btn btn-outline" style="font-size:0.78rem; padding:5px; border-color:var(--primary); color:var(--primary);" onclick="clearMonthFilter()">Mostrar todas las deudas</button>
                     <div class="amount text-primary" id="dash-month-total">$0.00</div>
                 </div>
             </div>
         </div>
         
-        <h3 style="margin-top: 20px;">Próximos Pagos (Orden de Urgencia)</h3>
+        <h3 style="margin-top:16px; margin-bottom:4px;">Próximos Pagos (Orden de Urgencia)</h3>
         <div class="table-responsive">
             <table>
                 <thead>
@@ -141,89 +229,114 @@
                 <tbody id="urgency-list"></tbody>
             </table>
         </div>
+
+        <!-- EXPORTAR / IMPORTAR en Resumen -->
+        <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border);">
+            <h3 style="margin-bottom:12px; font-size:0.95rem;">📂 Guardar / Importar Deudas</h3>
+            <div class="io-section">
+                <button class="btn btn-success" onclick="exportarJSON()">⬇ Exportar / Guardar lista</button>
+                <label class="btn btn-outline" style="cursor:pointer;">
+                    ⬆ Importar lista
+                    <input type="file" accept=".json" id="fileImportInput" style="display:none;" onchange="importarJSON(event)">
+                </label>
+            </div>
+            <p style="font-size:0.78rem; color:var(--text-light); margin-top:8px;">Exporta un archivo .json con todas tus deudas. Puedes importarlo en cualquier dispositivo para restaurar tu lista.</p>
+        </div>
     </main>
 
+    <!-- ===== FORMULARIO NUEVO REGISTRO ===== -->
     <main id="form-section" class="section">
-        <h2>Registrar Nueva Obligación</h2>
+        <h2 id="form-title">Registrar Nueva Obligación</h2>
         <br>
-        <form id="debtForm">
-            <div class="form-group" style="background: #f1f5f9; padding: 15px; border-radius: 8px;">
-                <label style="color: var(--primary); font-weight: bold;">Tipo de Registro</label>
-                <select id="tipoObligacion" class="form-control" onchange="toggleTipoFormulario()" style="font-weight: bold;">
-                    <option value="unica">Deuda de Pago Único</option>
-                    <option value="plazos">Compra a Plazos (Meses sin intereses)</option>
-                    <option value="mensual">Servicio Mensual (Luz, Internet, etc.)</option>
-                    <option value="semanal">Gasto Semanal / Despensa / Consumo por días</option>
-                </select>
-            </div>
+        <div class="form-group" style="background:#f1f5f9; padding:14px; border-radius:10px;">
+            <label style="color:var(--primary); font-weight:700;">Tipo de Registro</label>
+            <select id="tipoObligacion" class="form-control" onchange="toggleTipoFormulario()" style="font-weight:600;">
+                <option value="unica">Deuda de Pago Único</option>
+                <option value="plazos">Compra a Plazos (Meses sin intereses)</option>
+                <option value="mensual">Servicio Mensual (Luz, Internet, etc.)</option>
+                <option value="semanal">Gasto Semanal / Despensa / Consumo por días</option>
+            </select>
+        </div>
 
-            <div class="form-group">
-                <label>Nombre o Concepto</label>
-                <input type="text" id="nombre" class="form-control" required placeholder="Ej. Tarjeta, Despensa Aurrera, Pan...">
-            </div>
-            
-            <div class="form-group">
-                <label>Categoría</label>
-                <input list="categorias-list" id="categoria" class="form-control" placeholder="Escribe o selecciona..." required>
-                <datalist id="categorias-list">
-                    <option value="Tarjeta">
-                    <option value="Préstamo">
-                    <option value="Servicio">
-                    <option value="Compra">
-                    <option value="Despensa">
-                    <option value="Negocio">
-                    <option value="Otro">
-                </datalist>
-            </div>
+        <div class="form-group">
+            <label>Nombre o Concepto</label>
+            <input type="text" id="nombre" class="form-control" required placeholder="Ej. Tarjeta, Despensa, Internet...">
+        </div>
+        
+        <div class="form-group">
+            <label>Categoría</label>
+            <select id="categoria" class="form-control" required>
+                <option value="">-- Selecciona una categoría --</option>
+                <option value="Tarjeta">Tarjeta</option>
+                <option value="Préstamo">Préstamo</option>
+                <option value="Servicio">Servicio</option>
+                <option value="Compra">Compra</option>
+                <option value="Despensa">Despensa</option>
+                <option value="Negocio">Negocio</option>
+                <option value="Otro">Otro</option>
+            </select>
+        </div>
 
-            <div id="fechaLimiteDiv" class="form-group">
-                <label id="labelFecha">Próxima Fecha Límite de Pago</label>
-                <input type="date" id="fechaLimite" class="form-control">
-            </div>
+        <div id="fechaLimiteDiv" class="form-group">
+            <label id="labelFecha">Próxima Fecha Límite de Pago</label>
+            <input type="date" id="fechaLimite" class="form-control">
+        </div>
 
-            <div class="form-group">
-                <label id="labelMonto">Monto Total ($)</label>
-                <input type="number" id="monto" class="form-control" required min="0.1" step="0.01">
-            </div>
+        <div class="form-group">
+            <label id="labelMonto">Monto Total ($)</label>
+            <input type="number" id="monto" class="form-control" required min="0.1" step="0.01" inputmode="decimal">
+        </div>
 
-            <div id="plazosDiv" class="form-group" style="display:none; background: #fffbeb; padding: 15px; border-left: 4px solid var(--warning);">
-                <label>Número total de meses a pagar</label>
-                <input type="number" id="mesesPlazo" class="form-control" min="2" value="2">
-            </div>
+        <div id="plazosDiv" class="form-group" style="display:none; background:#fffbeb; padding:14px; border-left:4px solid var(--warning); border-radius:0 8px 8px 0;">
+            <label>Número total de meses a pagar</label>
+            <input type="number" id="mesesPlazo" class="form-control" min="2" value="2" inputmode="numeric">
+        </div>
 
-            <div id="semanalDiv" class="form-group" style="display:none; background: #f0fdf4; padding: 15px; border-left: 4px solid var(--success);">
-                <label>¿Qué días de la semana realizas este gasto?</label>
-                <div class="days-grid">
-                    <label class="day-label"><input type="checkbox" class="dia-cb" value="1"> Lunes</label>
-                    <label class="day-label"><input type="checkbox" class="dia-cb" value="2"> Martes</label>
-                    <label class="day-label"><input type="checkbox" class="dia-cb" value="3"> Miércoles</label>
-                    <label class="day-label"><input type="checkbox" class="dia-cb" value="4"> Jueves</label>
-                    <label class="day-label"><input type="checkbox" class="dia-cb" value="5"> Viernes</label>
-                    <label class="day-label"><input type="checkbox" class="dia-cb" value="6"> Sábado</label>
-                    <label class="day-label"><input type="checkbox" class="dia-cb" value="0"> Domingo</label>
+        <div id="semanalDiv" class="form-group" style="display:none; background:#f0fdf4; padding:14px; border-left:4px solid var(--success); border-radius:0 8px 8px 0;">
+            <label>¿Qué días de la semana realizas este gasto?</label>
+            <div class="days-grid">
+                <label class="day-label"><input type="checkbox" class="dia-cb" value="1"> Lunes</label>
+                <label class="day-label"><input type="checkbox" class="dia-cb" value="2"> Martes</label>
+                <label class="day-label"><input type="checkbox" class="dia-cb" value="3"> Miércoles</label>
+                <label class="day-label"><input type="checkbox" class="dia-cb" value="4"> Jueves</label>
+                <label class="day-label"><input type="checkbox" class="dia-cb" value="5"> Viernes</label>
+                <label class="day-label"><input type="checkbox" class="dia-cb" value="6"> Sábado</label>
+                <label class="day-label"><input type="checkbox" class="dia-cb" value="0"> Domingo</label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Notas opcionales</label>
+            <input type="text" id="notas" class="form-control" placeholder="Información adicional...">
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="button" class="btn" onclick="guardarRegistro()">💾 Guardar Registro</button>
+            <button type="button" class="btn btn-outline" onclick="cancelarFormulario()">Cancelar</button>
+        </div>
+    </main>
+
+    <!-- ===== LISTADO COMPLETO ===== -->
+    <main id="list-section" class="section">
+        <h2>📋 Listado Completo</h2>
+        
+        <!-- UNDO / REDO -->
+        <div class="undo-bar">
+            <button class="btn btn-outline btn-sm" id="btn-undo" onclick="undo()" disabled title="Deshacer último cambio">↩ Deshacer</button>
+            <button class="btn btn-outline btn-sm" id="btn-redo" onclick="redo()" disabled title="Rehacer">↪ Rehacer</button>
+            <span id="undo-hint">Sin cambios recientes</span>
+        </div>
+
+        <div class="list-toolbar">
+            <div class="search-wrap">
+                <input type="text" id="searchInput" class="form-control" placeholder="🔍 Buscar por nombre, categoría, notas..." oninput="updateUI()">
+            </div>
+            <div class="btn-group">
+                <div class="dropdown-wrapper" id="catDropdownWrapper">
+                    <button class="btn btn-outline btn-sm" onclick="toggleCatDropdown(event)">🏷 Categorías ▼</button>
+                    <div class="dropdown-content" id="cat-dropdown"></div>
                 </div>
             </div>
-
-            <div class="form-group">
-                <label>Notas opcionales</label>
-                <input type="text" id="notas" class="form-control">
-            </div>
-
-            <button type="submit" class="btn">Guardar Registro</button>
-            <button type="button" class="btn btn-outline" onclick="showSection('dashboard')">Cancelar</button>
-        </form>
-    </main>
-
-    <main id="list-section" class="section">
-        <h2>Listado Completo (Ordenado por Cercanía)</h2>
-        
-        <div style="display: flex; gap: 15px; flex-wrap: wrap; margin: 15px 0;">
-            <input type="text" id="searchInput" class="form-control" style="flex: 1; min-width: 200px;" placeholder="🔍 Buscar por nombre, categoría, notas..." oninput="updateUI()">
-            
-            <details class="dropdown-details">
-                <summary class="btn btn-outline">Filtrar Categorías ▼</summary>
-                <div class="dropdown-content" id="cat-dropdown"></div>
-            </details>
         </div>
 
         <div class="table-responsive">
@@ -245,336 +358,695 @@
     </main>
 </div>
 
+<!-- ===== MODAL EDICIÓN ===== -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <h3>✏️ Editar Registro</h3>
+        <input type="hidden" id="edit-id">
+
+        <div class="form-group">
+            <label>Nombre o Concepto</label>
+            <input type="text" id="edit-nombre" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label>Categoría</label>
+            <select id="edit-categoria" class="form-control">
+                <option value="Tarjeta">Tarjeta</option>
+                <option value="Préstamo">Préstamo</option>
+                <option value="Servicio">Servicio</option>
+                <option value="Compra">Compra</option>
+                <option value="Despensa">Despensa</option>
+                <option value="Negocio">Negocio</option>
+                <option value="Otro">Otro</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Monto ($)</label>
+            <input type="number" id="edit-monto" class="form-control" min="0.01" step="0.01" inputmode="decimal">
+        </div>
+        <div class="form-group" id="edit-fecha-group">
+            <label>Próxima Fecha de Pago</label>
+            <input type="date" id="edit-fecha" class="form-control">
+        </div>
+        <div class="form-group" id="edit-meses-group" style="display:none;">
+            <label>Meses Totales</label>
+            <input type="number" id="edit-meses" class="form-control" min="2" inputmode="numeric">
+        </div>
+        <div class="form-group">
+            <label>Notas</label>
+            <input type="text" id="edit-notas" class="form-control">
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-success" onclick="guardarEdicion()">✔ Guardar Cambios</button>
+            <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-    // 1. INICIALIZACIÓN DE DATOS
-    let debts = JSON.parse(localStorage.getItem('debts')) || [];
-    let activeFilters = [];
+// ============================================================
+//  ESTADO GLOBAL
+// ============================================================
+let debts = [];
+let activeFilters = [];
 
-    debts = debts.map(d => {
-        if(!d.tipo) d.tipo = d.isPlazos ? 'plazos' : 'unica';
-        return d;
-    });
+// Historial para undo/redo
+let history = [];
+let historyIndex = -1;
+const MAX_HISTORY = 50;
 
-    const todayObjDate = new Date();
-    document.getElementById('monthSelector').value = `${todayObjDate.getFullYear()}-${String(todayObjDate.getMonth() + 1).padStart(2, '0')}`;
-    const formatMoney = (amount) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
+// Estado del formulario de edición
+let editingId = null;
 
-    function toggleTipoFormulario() {
-        const tipo = document.getElementById('tipoObligacion').value;
-        const plazosDiv = document.getElementById('plazosDiv');
-        const semanalDiv = document.getElementById('semanalDiv');
-        const fechaLimiteDiv = document.getElementById('fechaLimiteDiv');
-        const labelMonto = document.getElementById('labelMonto');
-        const labelFecha = document.getElementById('labelFecha');
-
-        plazosDiv.style.display = 'none';
-        semanalDiv.style.display = 'none';
-        fechaLimiteDiv.style.display = 'block';
-        document.getElementById('fechaLimite').required = true;
-
-        if (tipo === 'unica') {
-            labelMonto.textContent = 'Monto Total de la Deuda ($)';
-            labelFecha.textContent = 'Fecha Límite de Pago';
-        } else if (tipo === 'plazos') {
-            plazosDiv.style.display = 'block';
-            labelMonto.textContent = 'Monto Total de la Compra ($)';
-            labelFecha.textContent = 'Fecha del Próximo Pago';
-        } else if (tipo === 'mensual') {
-            labelMonto.textContent = 'Monto Promedio por Mes ($)';
-            labelFecha.textContent = 'Próxima Fecha de Corte/Pago';
-        } else if (tipo === 'semanal') {
-            semanalDiv.style.display = 'block';
-            fechaLimiteDiv.style.display = 'none';
-            document.getElementById('fechaLimite').required = false;
-            labelMonto.textContent = 'Monto gastado POR DÍA de consumo ($)';
-        }
+// ============================================================
+//  INICIALIZACIÓN
+// ============================================================
+function init() {
+    const saved = localStorage.getItem('debts');
+    if (saved) {
+        try {
+            debts = JSON.parse(saved);
+            // migración de tipo
+            debts = debts.map(d => {
+                if (!d.tipo) d.tipo = d.isPlazos ? 'plazos' : 'unica';
+                return d;
+            });
+        } catch(e) { debts = []; }
     }
 
-    function getStatus(debt) {
-        if (debt.tipo === 'semanal') return { label: 'Recurrente', class: 'recurrente' };
-        
-        let isFullyPaid = false;
-        if (debt.tipo === 'plazos') isFullyPaid = debt.mesesPagados >= debt.mesesTotal;
-        else if (debt.tipo === 'unica') isFullyPaid = (debt.pagado || 0) >= debt.monto;
+    const today = new Date();
+    document.getElementById('monthSelector').value =
+        `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
-        if (isFullyPaid) return { label: 'Pagado', class: 'pagado' };
-        
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        const limitDate = new Date(debt.fechaLimite + 'T00:00:00');
-        const diffDays = Math.ceil((limitDate - today) / (1000 * 60 * 60 * 24));
-
-        if (diffDays < 0) return { label: 'Vencido', class: 'vencido' };
-        if (diffDays <= 7) return { label: 'Próximo', class: 'proximo' };
-        if (debt.tipo === 'mensual') return { label: 'Al corriente', class: 'pendiente' };
-        return { label: 'Pendiente', class: 'pendiente' };
-    }
-
-    function renderCategoryFilters() {
-        const allCats = Array.from(new Set([...debts.map(d => d.categoria), 'Tarjeta', 'Préstamo', 'Servicio', 'Compra', 'Despensa', 'Negocio'])).sort();
-        const container = document.getElementById('cat-dropdown');
-        container.innerHTML = '';
-        allCats.forEach(cat => {
-            const isChecked = activeFilters.length === 0 || activeFilters.includes(cat);
-            container.innerHTML += `<label><input type="checkbox" class="cat-filter-cb" value="${cat}" ${isChecked ? 'checked' : ''} onchange="applyFilters()"> ${cat}</label>`;
-        });
-    }
-
-    function applyFilters() {
-        const checkboxes = document.querySelectorAll('.cat-filter-cb');
-        activeFilters = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
-        if(activeFilters.length === checkboxes.length) activeFilters = []; 
-        updateUI();
-    }
-
-    function clearMonthFilter() {
-        document.getElementById('monthSelector').value = '';
-        updateUI();
-    }
-
-    function updateUI() {
-        let tPendiente = 0, tVencido = 0, tMesSel = 0, tServicios = 0;
-        const monthInput = document.getElementById('monthSelector').value;
-        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-
-        const listContainer = document.getElementById('debt-list');
-        const urgencyContainer = document.getElementById('urgency-list');
-        listContainer.innerHTML = ''; urgencyContainer.innerHTML = '';
-
-        // Actualizar etiqueta del filtro
-        document.getElementById('label-month-total').textContent = monthInput ? 'Pendiente del Mes:' : 'Total de lista mostrada:';
-
-        // Bloqueador de Error de Dedo (Obtiene el mes actual en formato YYYY-MM)
-        const todayObj = new Date();
-        const currentMonthKey = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}`;
-
-        // Ordenamiento estricto por fechas para lista de urgencia (Cercanas a Lejanas)
-        const debtsWithDate = debts.filter(d => d.fechaLimite).sort((a, b) => new Date(a.fechaLimite) - new Date(b.fechaLimite));
-        
-        // --- DASHBOARD (Cálculos y Urgencia) ---
-        debtsWithDate.forEach(debt => {
-            const status = getStatus(debt);
-            if (status.class === 'pagado') return;
-
-            let restantePagar = debt.monto;
-            if (debt.tipo === 'plazos') restantePagar = debt.monto - ((debt.monto / debt.mesesTotal) * debt.mesesPagados);
-            else if (debt.tipo === 'unica') restantePagar = debt.monto - (debt.pagado || 0);
-
-            // Sumas Globales (siempre se calculan igual)
-            if (debt.tipo === 'unica' || debt.tipo === 'plazos') tPendiente += restantePagar;
-            if (status.class === 'vencido') tVencido += restantePagar;
-            if (debt.tipo === 'mensual') tServicios += debt.monto;
-
-            // Filtro dinámico: Si no hay mes seleccionado, muestra todos. Si hay, solo los que coinciden.
-            const matchesMonth = monthInput ? debt.fechaLimite.startsWith(monthInput) : true;
-
-            if (matchesMonth) {
-                let montoMuestra = debt.tipo === 'plazos' ? (debt.monto / debt.mesesTotal) : restantePagar;
-                tMesSel += montoMuestra; // El total suma lo que se está mostrando en la lista de abajo
-                
-                urgencyContainer.innerHTML += `
-                    <tr>
-                        <td><strong>${debt.nombre}</strong></td>
-                        <td>${debt.tipo.toUpperCase()}</td>
-                        <td>${formatMoney(montoMuestra)}</td>
-                        <td>${debt.fechaLimite}</td>
-                        <td><span class="badge ${status.class}">${status.label}</span></td>
-                    </tr>`;
-            }
-        });
-
-        const debtsWeekly = debts.filter(d => d.tipo === 'semanal');
-        debtsWeekly.forEach(debt => {
-            const costoSemanal = debt.monto * debt.dias.length;
-            tServicios += (costoSemanal * 4.3);
-        });
-
-        // --- LISTADO COMPLETO ORDENADO POR CERCANÍA ---
-        // Se mandan al final los que no tienen fecha (como Despensa Semanal)
-        const sortedDebtsComplete = [...debts].sort((a, b) => {
-            if (!a.fechaLimite && !b.fechaLimite) return 0;
-            if (!a.fechaLimite) return 1;
-            if (!b.fechaLimite) return -1;
-            return new Date(a.fechaLimite) - new Date(b.fechaLimite);
-        });
-
-        sortedDebtsComplete.forEach(debt => {
-            const status = getStatus(debt);
-            const matchSearch = debt.nombre.toLowerCase().includes(searchTerm) || debt.categoria.toLowerCase().includes(searchTerm);
-            const matchCat = activeFilters.length === 0 || activeFilters.includes(debt.categoria);
-
-            if (matchSearch && matchCat) {
-                let detallesHTML = '', actionBtn = '', fechaStr = debt.fechaLimite || 'N/A';
-                
-                const isPaidThisMonth = debt.ultimaFechaPago && debt.ultimaFechaPago.startsWith(currentMonthKey);
-                const lockStyle = 'style="background:var(--border); color:var(--text-light); cursor:not-allowed;" disabled title="Ya registrado este mes"';
-
-                if (debt.tipo === 'unica') {
-                    const restante = debt.monto - (debt.pagado || 0);
-                    detallesHTML = `
-                        Total: ${formatMoney(debt.monto)}<br>
-                        <strong>Falta: ${formatMoney(restante)}</strong>`;
-                    if(status.class !== 'pagado') actionBtn = `<button class="btn btn-success" onclick="marcarPagado('${debt.id}')">✔ Pagar Todo</button>`;
-                
-                } else if (debt.tipo === 'plazos') {
-                    const cuotaMensual = debt.monto / debt.mesesTotal;
-                    const restantePlazos = debt.monto - (cuotaMensual * debt.mesesPagados);
-                    detallesHTML = `
-                        Progreso: ${debt.mesesPagados} de ${debt.mesesTotal} meses<br>
-                        <strong style="color:var(--primary);">Cuota: ${formatMoney(cuotaMensual)} / mes</strong><br>
-                        <strong style="color:var(--danger);">Resta pagar: ${formatMoney(restantePlazos)}</strong><br>
-                        <small style="color:var(--text-light);">Sugerencia: Ahorrar ${formatMoney(cuotaMensual / 4.3)} / sem</small>`;
-                    
-                    if(status.class !== 'pagado') {
-                        let btnTexto = isPaidThisMonth ? '✔ Mes Pagado' : '✔ Pagar Cuota';
-                        actionBtn = `<button class="btn btn-success" ${isPaidThisMonth ? lockStyle : ''} onclick="pagarPlazoMensual('${debt.id}')">${btnTexto}</button>`;
-                    }
-                
-                } else if (debt.tipo === 'mensual') {
-                    detallesHTML = `<strong style="color:var(--primary);">Costo: ${formatMoney(debt.monto)} / mes</strong>`;
-                    let btnTextoServ = isPaidThisMonth ? '✔ Mes Pagado' : '✔ Registrar Pago';
-                    actionBtn = `<button class="btn btn-purple" ${isPaidThisMonth ? lockStyle : ''} onclick="avanzarMesServicio('${debt.id}')">${btnTextoServ}</button>`;
-                
-                } else if (debt.tipo === 'semanal') {
-                    const nomDias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-                    const diasTexto = debt.dias.map(d => nomDias[d]).join(', ');
-                    const costoSemanal = debt.monto * debt.dias.length;
-                    
-                    detallesHTML = `
-                        Días: ${diasTexto}<br>
-                        <strong style="color:var(--success);">Gasto: ${formatMoney(costoSemanal)} / sem</strong>`;
-                    
-                    actionBtn = `<button class="btn btn-outline" style="border-color:var(--success); color:var(--success);" onclick="registrarCompra('${debt.id}')">🛒 Confirmar Compra</button>`;
-                }
-
-                if (debt.categoria === 'Despensa' || debt.tipo === 'semanal') {
-                    const lastDate = debt.ultimaFechaPago || 'Ninguna';
-                    detallesHTML += `<br><small style="color:var(--text-light);">Última compra/pago: <strong>${lastDate}</strong></small>`;
-                }
-
-                listContainer.innerHTML += `
-                    <tr>
-                        <td><strong>${debt.nombre}</strong><br><small style="color:var(--text-light);">${debt.notas || ''}</small></td>
-                        <td><span class="badge" style="background:#e2e8f0; color:#334155;">${debt.categoria}</span></td>
-                        <td>${debt.tipo.toUpperCase()}</td>
-                        <td>${detallesHTML}</td>
-                        <td>${fechaStr}</td>
-                        <td><span class="badge ${status.class}">${status.label}</span></td>
-                        <td class="actions">
-                            ${actionBtn}
-                            <button class="btn btn-danger" onclick="eliminarDeuda('${debt.id}')" title="Eliminar">🗑</button>
-                        </td>
-                    </tr>`;
-            }
-        });
-
-        document.getElementById('dash-total').textContent = formatMoney(tPendiente);
-        document.getElementById('dash-vencido').textContent = formatMoney(tVencido);
-        document.getElementById('dash-servicios').textContent = formatMoney(tServicios);
-        document.getElementById('dash-month-total').textContent = formatMoney(tMesSel);
-
-        localStorage.setItem('debts', JSON.stringify(debts));
-    }
-
-    // 5. ACCIONES DE GUARDADO Y PAGOS
-    document.getElementById('debtForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const tipo = document.getElementById('tipoObligacion').value;
-        let nuevaDeuda = {
-            id: Date.now().toString(),
-            nombre: document.getElementById('nombre').value,
-            categoria: document.getElementById('categoria').value || 'Otro',
-            monto: parseFloat(document.getElementById('monto').value),
-            tipo: tipo,
-            notas: document.getElementById('notas').value,
-            fechaCreacion: new Date().toISOString().split('T')[0]
-        };
-
-        if (tipo === 'unica') {
-            nuevaDeuda.fechaLimite = document.getElementById('fechaLimite').value;
-            nuevaDeuda.pagado = 0;
-        } else if (tipo === 'plazos') {
-            nuevaDeuda.fechaLimite = document.getElementById('fechaLimite').value;
-            nuevaDeuda.mesesTotal = parseInt(document.getElementById('mesesPlazo').value);
-            nuevaDeuda.mesesPagados = 0;
-        } else if (tipo === 'mensual') {
-            nuevaDeuda.fechaLimite = document.getElementById('fechaLimite').value;
-        } else if (tipo === 'semanal') {
-            const checkboxes = document.querySelectorAll('.dia-cb:checked');
-            if(checkboxes.length === 0) { alert("Selecciona al menos un día de la semana."); return; }
-            nuevaDeuda.dias = Array.from(checkboxes).map(cb => parseInt(cb.value));
-        }
-        
-        debts.push(nuevaDeuda);
-        this.reset();
-        document.getElementById('fechaLimiteDiv').style.display = 'block';
-        document.getElementById('plazosDiv').style.display = 'none';
-        document.getElementById('semanalDiv').style.display = 'none';
-        
-        renderCategoryFilters();
-        updateUI();
-        showSection('dashboard');
-    });
-
-    function marcarPagado(id) {
-        if(!confirm('¿Confirmas el pago total de esta deuda?')) return;
-        const debt = debts.find(d => d.id === id);
-        if (debt) { 
-            debt.pagado = debt.monto; 
-            debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
-            updateUI(); 
-        }
-    }
-
-    function pagarPlazoMensual(id) {
-        if(!confirm('¿Confirmas el pago de esta mensualidad? Esto actualizará tu saldo.')) return;
-        const debt = debts.find(d => d.id === id);
-        if (debt && debt.mesesPagados < debt.mesesTotal) {
-            debt.mesesPagados++;
-            let date = new Date(debt.fechaLimite + 'T00:00:00');
-            date.setMonth(date.getMonth() + 1);
-            debt.fechaLimite = date.toISOString().split('T')[0];
-            debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
-            updateUI();
-        }
-    }
-
-    function avanzarMesServicio(id) {
-        if(!confirm('¿Confirmas el pago de este servicio mensual?')) return;
-        const debt = debts.find(d => d.id === id);
-        if (debt) {
-            let date = new Date(debt.fechaLimite + 'T00:00:00');
-            date.setMonth(date.getMonth() + 1);
-            debt.fechaLimite = date.toISOString().split('T')[0];
-            debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
-            updateUI();
-        }
-    }
-
-    function registrarCompra(id) {
-        const debt = debts.find(d => d.id === id);
-        if (debt) {
-            debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
-            updateUI();
-        }
-    }
-
-    function eliminarDeuda(id) {
-        if(confirm('¿Estás seguro de eliminar este registro de forma permanente?')) {
-            debts = debts.filter(d => d.id !== id);
-            renderCategoryFilters();
-            updateUI();
-        }
-    }
-
-    function showSection(sectionId) {
-        document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-        document.getElementById(sectionId + '-section').classList.add('active');
-    }
+    // Guardar estado inicial en historial
+    pushHistory('Inicio');
 
     toggleTipoFormulario();
     renderCategoryFilters();
     updateUI();
+
+    // Cerrar dropdown al tocar fuera
+    document.addEventListener('click', function(e) {
+        const wrapper = document.getElementById('catDropdownWrapper');
+        if (wrapper && !wrapper.contains(e.target)) {
+            wrapper.classList.remove('open');
+        }
+    });
+
+    // Cerrar modal al tocar overlay
+    document.getElementById('editModal').addEventListener('click', function(e) {
+        if (e.target === this) cerrarModal();
+    });
+}
+
+// ============================================================
+//  HISTORIAL (UNDO / REDO)
+// ============================================================
+function pushHistory(label) {
+    // Descarta el futuro si estamos en medio del historial
+    history = history.slice(0, historyIndex + 1);
+    history.push({ debts: JSON.stringify(debts), label });
+    if (history.length > MAX_HISTORY) history.shift();
+    historyIndex = history.length - 1;
+    updateUndoRedoButtons();
+}
+
+function undo() {
+    if (historyIndex <= 0) return;
+    historyIndex--;
+    debts = JSON.parse(history[historyIndex].debts);
+    persistDebts();
+    renderCategoryFilters();
+    updateUI();
+    const label = history[historyIndex + 1]?.label || '';
+    showToast(`↩ Deshecho: ${label}`);
+    updateUndoRedoButtons();
+}
+
+function redo() {
+    if (historyIndex >= history.length - 1) return;
+    historyIndex++;
+    debts = JSON.parse(history[historyIndex].debts);
+    persistDebts();
+    renderCategoryFilters();
+    updateUI();
+    const label = history[historyIndex].label || '';
+    showToast(`↪ Rehecho: ${label}`);
+    updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons() {
+    const btnUndo = document.getElementById('btn-undo');
+    const btnRedo = document.getElementById('btn-redo');
+    const hint = document.getElementById('undo-hint');
+
+    btnUndo.disabled = historyIndex <= 0;
+    btnRedo.disabled = historyIndex >= history.length - 1;
+
+    if (history.length > 1) {
+        const cur = history[historyIndex]?.label || '';
+        hint.textContent = `Estado: "${cur}"`;
+    } else {
+        hint.textContent = 'Sin cambios recientes';
+    }
+}
+
+// ============================================================
+//  PERSISTENCIA
+// ============================================================
+function persistDebts() {
+    localStorage.setItem('debts', JSON.stringify(debts));
+}
+
+// ============================================================
+//  UTILIDADES
+// ============================================================
+const formatMoney = (amount) =>
+    new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount || 0);
+
+function getStatus(debt) {
+    if (debt.tipo === 'semanal') return { label: 'Recurrente', class: 'recurrente' };
+    
+    let isFullyPaid = false;
+    if (debt.tipo === 'plazos') isFullyPaid = debt.mesesPagados >= debt.mesesTotal;
+    else if (debt.tipo === 'unica') isFullyPaid = (debt.pagado || 0) >= debt.monto;
+
+    if (isFullyPaid) return { label: 'Pagado', class: 'pagado' };
+    
+    const today = new Date(); today.setHours(0,0,0,0);
+    const limitDate = new Date(debt.fechaLimite + 'T00:00:00');
+    const diffDays = Math.ceil((limitDate - today) / 86400000);
+
+    if (diffDays < 0) return { label: 'Vencido', class: 'vencido' };
+    if (diffDays <= 7) return { label: 'Próximo', class: 'proximo' };
+    if (debt.tipo === 'mensual') return { label: 'Al corriente', class: 'pendiente' };
+    return { label: 'Pendiente', class: 'pendiente' };
+}
+
+function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (type ? ' ' + type : '');
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ============================================================
+//  SECCIONES
+// ============================================================
+function showSection(sectionId) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(sectionId + '-section').classList.add('active');
+}
+
+// ============================================================
+//  CATEGORÍAS FILTER DROPDOWN
+// ============================================================
+function toggleCatDropdown(e) {
+    e.stopPropagation();
+    document.getElementById('catDropdownWrapper').classList.toggle('open');
+}
+
+function renderCategoryFilters() {
+    const allCats = Array.from(new Set([
+        ...debts.map(d => d.categoria),
+        'Tarjeta', 'Préstamo', 'Servicio', 'Compra', 'Despensa', 'Negocio'
+    ])).filter(Boolean).sort();
+
+    const container = document.getElementById('cat-dropdown');
+    container.innerHTML = '';
+    allCats.forEach(cat => {
+        const isChecked = activeFilters.length === 0 || activeFilters.includes(cat);
+        const lbl = document.createElement('label');
+        lbl.innerHTML = `<input type="checkbox" class="cat-filter-cb" value="${cat}" ${isChecked ? 'checked' : ''}> ${cat}`;
+        lbl.querySelector('input').addEventListener('change', applyFilters);
+        container.appendChild(lbl);
+    });
+}
+
+function applyFilters() {
+    const checkboxes = document.querySelectorAll('.cat-filter-cb');
+    activeFilters = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+    if (activeFilters.length === checkboxes.length) activeFilters = [];
+    updateUI();
+}
+
+function clearMonthFilter() {
+    document.getElementById('monthSelector').value = '';
+    updateUI();
+}
+
+// ============================================================
+//  FORMULARIO NUEVO REGISTRO
+// ============================================================
+function toggleTipoFormulario() {
+    const tipo = document.getElementById('tipoObligacion').value;
+    const plazosDiv = document.getElementById('plazosDiv');
+    const semanalDiv = document.getElementById('semanalDiv');
+    const fechaLimiteDiv = document.getElementById('fechaLimiteDiv');
+    const labelMonto = document.getElementById('labelMonto');
+    const labelFecha = document.getElementById('labelFecha');
+    const fechaInput = document.getElementById('fechaLimite');
+
+    plazosDiv.style.display = 'none';
+    semanalDiv.style.display = 'none';
+    fechaLimiteDiv.style.display = 'block';
+    fechaInput.required = true;
+
+    if (tipo === 'unica') {
+        labelMonto.textContent = 'Monto Total de la Deuda ($)';
+        labelFecha.textContent = 'Fecha Límite de Pago';
+    } else if (tipo === 'plazos') {
+        plazosDiv.style.display = 'block';
+        labelMonto.textContent = 'Monto Total de la Compra ($)';
+        labelFecha.textContent = 'Fecha del Próximo Pago';
+    } else if (tipo === 'mensual') {
+        labelMonto.textContent = 'Monto Promedio por Mes ($)';
+        labelFecha.textContent = 'Próxima Fecha de Corte/Pago';
+    } else if (tipo === 'semanal') {
+        semanalDiv.style.display = 'block';
+        fechaLimiteDiv.style.display = 'none';
+        fechaInput.required = false;
+        labelMonto.textContent = 'Monto gastado POR DÍA de consumo ($)';
+    }
+}
+
+function guardarRegistro() {
+    const tipo = document.getElementById('tipoObligacion').value;
+    const nombre = document.getElementById('nombre').value.trim();
+    const categoria = document.getElementById('categoria').value;
+    const monto = parseFloat(document.getElementById('monto').value);
+    const fechaLimite = document.getElementById('fechaLimite').value;
+    const notas = document.getElementById('notas').value.trim();
+
+    if (!nombre) { showToast('⚠ Escribe un nombre o concepto', 'error'); return; }
+    if (!categoria) { showToast('⚠ Selecciona una categoría', 'error'); return; }
+    if (!monto || monto <= 0) { showToast('⚠ Ingresa un monto válido', 'error'); return; }
+    if (tipo !== 'semanal' && !fechaLimite) { showToast('⚠ Selecciona una fecha', 'error'); return; }
+
+    if (tipo === 'semanal') {
+        const checks = document.querySelectorAll('.dia-cb:checked');
+        if (checks.length === 0) { showToast('⚠ Selecciona al menos un día', 'error'); return; }
+    }
+
+    let nueva = {
+        id: Date.now().toString(),
+        nombre, categoria, monto, tipo, notas,
+        fechaCreacion: new Date().toISOString().split('T')[0]
+    };
+
+    if (tipo === 'unica') {
+        nueva.fechaLimite = fechaLimite;
+        nueva.pagado = 0;
+    } else if (tipo === 'plazos') {
+        nueva.fechaLimite = fechaLimite;
+        nueva.mesesTotal = parseInt(document.getElementById('mesesPlazo').value);
+        nueva.mesesPagados = 0;
+    } else if (tipo === 'mensual') {
+        nueva.fechaLimite = fechaLimite;
+    } else if (tipo === 'semanal') {
+        nueva.dias = Array.from(document.querySelectorAll('.dia-cb:checked')).map(cb => parseInt(cb.value));
+    }
+
+    debts.push(nueva);
+    pushHistory(`Agregar: ${nombre}`);
+    persistDebts();
+    renderCategoryFilters();
+    updateUI();
+    resetFormulario();
+    showSection('dashboard');
+    showToast(`✔ "${nombre}" guardado`, 'success');
+}
+
+function resetFormulario() {
+    document.getElementById('nombre').value = '';
+    document.getElementById('categoria').value = '';
+    document.getElementById('monto').value = '';
+    document.getElementById('fechaLimite').value = '';
+    document.getElementById('notas').value = '';
+    document.getElementById('mesesPlazo').value = '2';
+    document.querySelectorAll('.dia-cb').forEach(cb => cb.checked = false);
+    document.getElementById('tipoObligacion').value = 'unica';
+    toggleTipoFormulario();
+}
+
+function cancelarFormulario() {
+    resetFormulario();
+    showSection('dashboard');
+}
+
+// ============================================================
+//  MODAL EDICIÓN
+// ============================================================
+function abrirEdicion(id) {
+    const debt = debts.find(d => d.id === id);
+    if (!debt) return;
+
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-nombre').value = debt.nombre;
+    document.getElementById('edit-categoria').value = debt.categoria || 'Otro';
+    document.getElementById('edit-monto').value = debt.monto;
+    document.getElementById('edit-fecha').value = debt.fechaLimite || '';
+    document.getElementById('edit-notas').value = debt.notas || '';
+
+    // Meses (solo para plazos)
+    const mesesGroup = document.getElementById('edit-meses-group');
+    if (debt.tipo === 'plazos') {
+        mesesGroup.style.display = 'block';
+        document.getElementById('edit-meses').value = debt.mesesTotal;
+    } else {
+        mesesGroup.style.display = 'none';
+    }
+
+    // Ocultar fecha para semanal
+    const fechaGroup = document.getElementById('edit-fecha-group');
+    fechaGroup.style.display = debt.tipo === 'semanal' ? 'none' : 'block';
+
+    document.getElementById('editModal').classList.add('open');
+    document.getElementById('edit-nombre').focus();
+}
+
+function cerrarModal() {
+    document.getElementById('editModal').classList.remove('open');
+}
+
+function guardarEdicion() {
+    const id = document.getElementById('edit-id').value;
+    const debt = debts.find(d => d.id === id);
+    if (!debt) return;
+
+    const nombre = document.getElementById('edit-nombre').value.trim();
+    const categoria = document.getElementById('edit-categoria').value;
+    const monto = parseFloat(document.getElementById('edit-monto').value);
+    const fecha = document.getElementById('edit-fecha').value;
+    const notas = document.getElementById('edit-notas').value.trim();
+
+    if (!nombre || !monto || monto <= 0) {
+        showToast('⚠ Revisa los datos ingresados', 'error'); return;
+    }
+
+    debt.nombre = nombre;
+    debt.categoria = categoria;
+    debt.monto = monto;
+    debt.notas = notas;
+    if (fecha) debt.fechaLimite = fecha;
+    if (debt.tipo === 'plazos') {
+        const meses = parseInt(document.getElementById('edit-meses').value);
+        if (meses >= 2) debt.mesesTotal = meses;
+    }
+
+    pushHistory(`Editar: ${nombre}`);
+    persistDebts();
+    renderCategoryFilters();
+    updateUI();
+    cerrarModal();
+    showToast(`✏️ "${nombre}" actualizado`, 'success');
+}
+
+// ============================================================
+//  ACCIONES DE PAGO
+// ============================================================
+function marcarPagado(id) {
+    if (!confirm('¿Confirmas el pago total de esta deuda?')) return;
+    const debt = debts.find(d => d.id === id);
+    if (debt) {
+        debt.pagado = debt.monto;
+        debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
+        pushHistory(`Pagar: ${debt.nombre}`);
+        persistDebts();
+        updateUI();
+    }
+}
+
+function pagarPlazoMensual(id) {
+    if (!confirm('¿Confirmas el pago de esta mensualidad?')) return;
+    const debt = debts.find(d => d.id === id);
+    if (debt && debt.mesesPagados < debt.mesesTotal) {
+        debt.mesesPagados++;
+        let date = new Date(debt.fechaLimite + 'T00:00:00');
+        date.setMonth(date.getMonth() + 1);
+        debt.fechaLimite = date.toISOString().split('T')[0];
+        debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
+        pushHistory(`Plazo: ${debt.nombre}`);
+        persistDebts();
+        updateUI();
+    }
+}
+
+function avanzarMesServicio(id) {
+    if (!confirm('¿Confirmas el pago de este servicio mensual?')) return;
+    const debt = debts.find(d => d.id === id);
+    if (debt) {
+        let date = new Date(debt.fechaLimite + 'T00:00:00');
+        date.setMonth(date.getMonth() + 1);
+        debt.fechaLimite = date.toISOString().split('T')[0];
+        debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
+        pushHistory(`Servicio: ${debt.nombre}`);
+        persistDebts();
+        updateUI();
+    }
+}
+
+function registrarCompra(id) {
+    const debt = debts.find(d => d.id === id);
+    if (debt) {
+        debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
+        pushHistory(`Compra: ${debt.nombre}`);
+        persistDebts();
+        updateUI();
+        showToast('🛒 Compra registrada', 'success');
+    }
+}
+
+function eliminarDeuda(id) {
+    const debt = debts.find(d => d.id === id);
+    if (!debt) return;
+    if (!confirm(`¿Eliminar permanentemente "${debt.nombre}"?`)) return;
+    const nombre = debt.nombre;
+    debts = debts.filter(d => d.id !== id);
+    pushHistory(`Eliminar: ${nombre}`);
+    persistDebts();
+    renderCategoryFilters();
+    updateUI();
+    showToast(`🗑 "${nombre}" eliminado`);
+}
+
+// ============================================================
+//  EXPORTAR / IMPORTAR JSON
+// ============================================================
+function exportarJSON() {
+    if (debts.length === 0) {
+        showToast('⚠ No hay deudas para exportar', 'error'); return;
+    }
+    const data = JSON.stringify({ version: 1, exportDate: new Date().toISOString(), debts }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const fecha = new Date().toISOString().split('T')[0];
+    a.href = url;
+    a.download = `deudas_${fecha}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('✔ Lista exportada exitosamente', 'success');
+}
+
+function importarJSON(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const parsed = JSON.parse(e.target.result);
+            let imported = [];
+
+            if (Array.isArray(parsed)) {
+                imported = parsed;
+            } else if (parsed.debts && Array.isArray(parsed.debts)) {
+                imported = parsed.debts;
+            } else {
+                throw new Error('Formato no reconocido');
+            }
+
+            if (imported.length === 0) {
+                showToast('⚠ El archivo no contiene deudas', 'error'); return;
+            }
+
+            const action = confirm(
+                `Se encontraron ${imported.length} registro(s).\n\n` +
+                `¿Deseas REEMPLAZAR tu lista actual?\n` +
+                `(Cancela para AGREGAR al final de tu lista existente)`
+            );
+
+            if (action) {
+                debts = imported;
+            } else {
+                const existingIds = new Set(debts.map(d => d.id));
+                imported.forEach(d => {
+                    if (!existingIds.has(d.id)) debts.push(d);
+                });
+            }
+
+            pushHistory('Importar archivo');
+            persistDebts();
+            renderCategoryFilters();
+            updateUI();
+            showToast(`✔ ${imported.length} registro(s) importado(s)`, 'success');
+        } catch(err) {
+            showToast('⚠ El archivo no es válido', 'error');
+        }
+    };
+    reader.readAsText(file);
+    // Reset input para poder volver a seleccionar el mismo archivo
+    event.target.value = '';
+}
+
+// ============================================================
+//  RENDER PRINCIPAL
+// ============================================================
+function updateUI() {
+    let tPendiente = 0, tVencido = 0, tMesSel = 0, tServicios = 0;
+    const monthInput = document.getElementById('monthSelector').value;
+    const searchTerm = (document.getElementById('searchInput').value || '').toLowerCase();
+
+    const listContainer = document.getElementById('debt-list');
+    const urgencyContainer = document.getElementById('urgency-list');
+    listContainer.innerHTML = '';
+    urgencyContainer.innerHTML = '';
+
+    document.getElementById('label-month-total').textContent = monthInput
+        ? 'Pendiente del Mes:'
+        : 'Total de lista mostrada:';
+
+    const todayObj = new Date();
+    const currentMonthKey = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}`;
+
+    // --- DASHBOARD URGENCIA ---
+    const debtsWithDate = debts.filter(d => d.fechaLimite)
+        .sort((a, b) => new Date(a.fechaLimite) - new Date(b.fechaLimite));
+
+    debtsWithDate.forEach(debt => {
+        const status = getStatus(debt);
+        if (status.class === 'pagado') return;
+
+        let restantePagar = debt.monto;
+        if (debt.tipo === 'plazos') restantePagar = debt.monto - ((debt.monto / debt.mesesTotal) * debt.mesesPagados);
+        else if (debt.tipo === 'unica') restantePagar = debt.monto - (debt.pagado || 0);
+
+        if (debt.tipo === 'unica' || debt.tipo === 'plazos') tPendiente += restantePagar;
+        if (status.class === 'vencido') tVencido += restantePagar;
+        if (debt.tipo === 'mensual') tServicios += debt.monto;
+
+        const matchesMonth = monthInput ? debt.fechaLimite.startsWith(monthInput) : true;
+        if (matchesMonth) {
+            let montoMuestra = debt.tipo === 'plazos' ? (debt.monto / debt.mesesTotal) : restantePagar;
+            tMesSel += montoMuestra;
+            urgencyContainer.innerHTML += `
+                <tr>
+                    <td><strong>${debt.nombre}</strong></td>
+                    <td>${debt.tipo.toUpperCase()}</td>
+                    <td>${formatMoney(montoMuestra)}</td>
+                    <td>${debt.fechaLimite}</td>
+                    <td><span class="badge ${status.class}">${status.label}</span></td>
+                </tr>`;
+        }
+    });
+
+    const debtsWeekly = debts.filter(d => d.tipo === 'semanal');
+    debtsWeekly.forEach(debt => {
+        tServicios += (debt.monto * debt.dias.length * 4.3);
+    });
+
+    // --- LISTADO COMPLETO ---
+    const sorted = [...debts].sort((a, b) => {
+        if (!a.fechaLimite && !b.fechaLimite) return 0;
+        if (!a.fechaLimite) return 1;
+        if (!b.fechaLimite) return -1;
+        return new Date(a.fechaLimite) - new Date(b.fechaLimite);
+    });
+
+    const nomDias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+    sorted.forEach(debt => {
+        const status = getStatus(debt);
+        const matchSearch = (debt.nombre + debt.categoria + (debt.notas || '')).toLowerCase().includes(searchTerm);
+        const matchCat = activeFilters.length === 0 || activeFilters.includes(debt.categoria);
+
+        if (!matchSearch || !matchCat) return;
+
+        let detallesHTML = '', actionBtn = '', fechaStr = debt.fechaLimite || 'N/A';
+        const isPaidThisMonth = debt.ultimaFechaPago && debt.ultimaFechaPago.startsWith(currentMonthKey);
+        const lockStyle = 'style="background:var(--border);color:var(--text-light);cursor:not-allowed;" disabled';
+
+        if (debt.tipo === 'unica') {
+            const restante = debt.monto - (debt.pagado || 0);
+            detallesHTML = `Total: ${formatMoney(debt.monto)}<br><strong>Falta: ${formatMoney(restante)}</strong>`;
+            if (status.class !== 'pagado')
+                actionBtn = `<button class="btn btn-success btn-sm" onclick="marcarPagado('${debt.id}')">✔ Pagar Todo</button>`;
+
+        } else if (debt.tipo === 'plazos') {
+            const cuota = debt.monto / debt.mesesTotal;
+            const resta = debt.monto - (cuota * debt.mesesPagados);
+            detallesHTML = `
+                Progreso: ${debt.mesesPagados}/${debt.mesesTotal} meses<br>
+                <strong style="color:var(--primary);">Cuota: ${formatMoney(cuota)}/mes</strong><br>
+                <strong style="color:var(--danger);">Resta: ${formatMoney(resta)}</strong><br>
+                <small style="color:var(--text-light);">Ahorro/sem: ${formatMoney(cuota/4.3)}</small>`;
+            if (status.class !== 'pagado') {
+                const txt = isPaidThisMonth ? '✔ Mes Pagado' : '✔ Pagar Cuota';
+                actionBtn = `<button class="btn btn-success btn-sm" ${isPaidThisMonth ? lockStyle : ''} onclick="pagarPlazoMensual('${debt.id}')">${txt}</button>`;
+            }
+
+        } else if (debt.tipo === 'mensual') {
+            detallesHTML = `<strong style="color:var(--primary);">Costo: ${formatMoney(debt.monto)}/mes</strong>`;
+            const txt = isPaidThisMonth ? '✔ Mes Pagado' : '✔ Registrar Pago';
+            actionBtn = `<button class="btn btn-purple btn-sm" ${isPaidThisMonth ? lockStyle : ''} onclick="avanzarMesServicio('${debt.id}')">${txt}</button>`;
+
+        } else if (debt.tipo === 'semanal') {
+            const diasTexto = (debt.dias || []).map(d => nomDias[d]).join(', ');
+            const costoSem = debt.monto * (debt.dias || []).length;
+            detallesHTML = `Días: ${diasTexto}<br><strong style="color:var(--success);">Gasto: ${formatMoney(costoSem)}/sem</strong>`;
+            actionBtn = `<button class="btn btn-outline btn-sm" style="border-color:var(--success);color:var(--success);" onclick="registrarCompra('${debt.id}')">🛒 Confirmar Compra</button>`;
+        }
+
+        if (debt.categoria === 'Despensa' || debt.tipo === 'semanal') {
+            const lastDate = debt.ultimaFechaPago || 'Ninguna';
+            detallesHTML += `<br><small style="color:var(--text-light);">Último pago: <strong>${lastDate}</strong></small>`;
+        }
+
+        listContainer.innerHTML += `
+            <tr>
+                <td><strong>${debt.nombre}</strong><br><small style="color:var(--text-light);">${debt.notas || ''}</small></td>
+                <td><span class="badge" style="background:#e2e8f0;color:#334155;">${debt.categoria}</span></td>
+                <td style="white-space:nowrap;">${debt.tipo.toUpperCase()}</td>
+                <td>${detallesHTML}</td>
+                <td style="white-space:nowrap;">${fechaStr}</td>
+                <td><span class="badge ${status.class}">${status.label}</span></td>
+                <td class="actions">
+                    ${actionBtn}
+                    <button class="btn btn-warning btn-sm" onclick="abrirEdicion('${debt.id}')" title="Editar">✏️</button>
+                    <button class="btn btn-danger btn-sm" onclick="eliminarDeuda('${debt.id}')" title="Eliminar">🗑</button>
+                </td>
+            </tr>`;
+    });
+
+    document.getElementById('dash-total').textContent = formatMoney(tPendiente);
+    document.getElementById('dash-vencido').textContent = formatMoney(tVencido);
+    document.getElementById('dash-servicios').textContent = formatMoney(tServicios);
+    document.getElementById('dash-month-total').textContent = formatMoney(tMesSel);
+
+    persistDebts();
+}
+
+// ============================================================
+//  ARRANQUE
+// ============================================================
+init();
 </script>
 </body>
 </html>
