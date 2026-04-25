@@ -214,7 +214,7 @@
             </div>
         </div>
         
-        <h3 style="margin-top:16px; margin-bottom:4px;">Próximos Pagos (Orden de Urgencia)</h3>
+        <h3 style="margin-top:16px; margin-bottom:4px;">Próximos Pagos</h3>
         <div class="table-responsive">
             <table>
                 <thead>
@@ -987,7 +987,7 @@ function updateUI() {
             const restante = debt.monto - (debt.pagado || 0);
             detallesHTML = `Total: ${formatMoney(debt.monto)}<br><strong>Falta: ${formatMoney(restante)}</strong>`;
             if (status.class !== 'pagado')
-                actionBtn = `<button class="btn btn-success btn-sm" onclick="marcarPagado('${debt.id}')">✔ Pagar Todo</button>`;
+                actionBtn = `<button class="btn btn-success btn-sm" data-action="pagar" data-id="${debt.id}">✔ Pagar Todo</button>`;
 
         } else if (debt.tipo === 'plazos') {
             const cuota = debt.monto / debt.mesesTotal;
@@ -999,19 +999,19 @@ function updateUI() {
                 <small style="color:var(--text-light);">Ahorro/sem: ${formatMoney(cuota/4.3)}</small>`;
             if (status.class !== 'pagado') {
                 const txt = isPaidThisMonth ? '✔ Mes Pagado' : '✔ Pagar Cuota';
-                actionBtn = `<button class="btn btn-success btn-sm" ${isPaidThisMonth ? lockStyle : ''} onclick="pagarPlazoMensual('${debt.id}')">${txt}</button>`;
+                actionBtn = `<button class="btn btn-success btn-sm" ${isPaidThisMonth ? lockStyle : ''} data-action="plazo" data-id="${debt.id}">${txt}</button>`;
             }
 
         } else if (debt.tipo === 'mensual') {
             detallesHTML = `<strong style="color:var(--primary);">Costo: ${formatMoney(debt.monto)}/mes</strong>`;
             const txt = isPaidThisMonth ? '✔ Mes Pagado' : '✔ Registrar Pago';
-            actionBtn = `<button class="btn btn-purple btn-sm" ${isPaidThisMonth ? lockStyle : ''} onclick="avanzarMesServicio('${debt.id}')">${txt}</button>`;
+            actionBtn = `<button class="btn btn-purple btn-sm" ${isPaidThisMonth ? lockStyle : ''} data-action="servicio" data-id="${debt.id}">${txt}</button>`;
 
         } else if (debt.tipo === 'semanal') {
             const diasTexto = (debt.dias || []).map(d => nomDias[d]).join(', ');
             const costoSem = debt.monto * (debt.dias || []).length;
             detallesHTML = `Días: ${diasTexto}<br><strong style="color:var(--success);">Gasto: ${formatMoney(costoSem)}/sem</strong>`;
-            actionBtn = `<button class="btn btn-outline btn-sm" style="border-color:var(--success);color:var(--success);" onclick="registrarCompra('${debt.id}')">🛒 Confirmar Compra</button>`;
+            actionBtn = `<button class="btn btn-outline btn-sm" style="border-color:var(--success);color:var(--success);" data-action="compra" data-id="${debt.id}">🛒 Confirmar Compra</button>`;
         }
 
         if (debt.categoria === 'Despensa' || debt.tipo === 'semanal') {
@@ -1029,8 +1029,8 @@ function updateUI() {
                 <td><span class="badge ${status.class}">${status.label}</span></td>
                 <td class="actions">
                     ${actionBtn}
-                    <button class="btn btn-warning btn-sm" onclick="abrirEdicion('${debt.id}')" title="Editar">✏️</button>
-                    <button class="btn btn-danger btn-sm" onclick="eliminarDeuda('${debt.id}')" title="Eliminar">🗑</button>
+                    <button class="btn btn-warning btn-sm" data-action="editar" data-id="${debt.id}" title="Editar">✏️</button>
+                    <button class="btn btn-danger btn-sm" data-action="eliminar" data-id="${debt.id}" title="Eliminar">🗑</button>
                 </td>
             </tr>`;
     });
@@ -1041,6 +1041,19 @@ function updateUI() {
     document.getElementById('dash-month-total').textContent = formatMoney(tMesSel);
 
     persistDebts();
+    // Delegación de eventos para la tabla — funciona en iOS y Android
+    document.getElementById('debt-list').addEventListener('click', function(e) {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn || btn.disabled) return;
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+        if (action === 'pagar')         marcarPagado(id);
+        else if (action === 'plazo')    pagarPlazoMensual(id);
+        else if (action === 'servicio') avanzarMesServicio(id);
+        else if (action === 'compra')   registrarCompra(id);
+        else if (action === 'editar')   abrirEdicion(id);
+        else if (action === 'eliminar') eliminarDeuda(id);
+    });
 }
 
 // ============================================================
