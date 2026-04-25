@@ -32,6 +32,14 @@
             --purple: #a78bfa;
             --row-hover: #1a2637;
         }
+
+/* Volver blanco el icono del calendario en modo oscuro */
+body.dark input[type="date"]::-webkit-calendar-picker-indicator,
+body.dark input[type="month"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
         body.dark .form-control { background: #080d14; color: var(--text); border-color: var(--border); }
         body.dark select.form-control {
             background-color: #080d14;
