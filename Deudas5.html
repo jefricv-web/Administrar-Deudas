@@ -32,13 +32,13 @@
             --purple: #a78bfa;
             --row-hover: #1a2637;
         }
-
-/* Volver blanco el icono del calendario en modo oscuro */
-body.dark input[type="date"]::-webkit-calendar-picker-indicator,
-body.dark input[type="month"]::-webkit-calendar-picker-indicator {
-    filter: invert(1);
-    cursor: pointer;
-}
+        
+        /* Volver blanco el icono del calendario en modo oscuro */
+        body.dark input[type="date"]::-webkit-calendar-picker-indicator,
+        body.dark input[type="month"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
 
         body.dark .form-control { background: #080d14; color: var(--text); border-color: var(--border); }
         body.dark select.form-control {
@@ -846,14 +846,19 @@ function guardarEdicion() {
 }
 
 // ============================================================
-//  MODAL DE CONFIRMACIÓN (reemplaza confirm() nativo)
+//  MODAL DE CONFIRMACIÓN DINÁMICO
 // ============================================================
 let _confirmCallback = null;
 
-function showConfirm(icon, title, msg, onYes) {
+function showConfirm(icon, title, msg, onYes, textYes = "✔ CONFIRMAR PAGO", textNo = "✖ NO CONFIRMAR") {
     document.getElementById('confirm-icon').textContent = icon;
     document.getElementById('confirm-title').textContent = title;
     document.getElementById('confirm-msg').textContent = msg;
+    
+    // Asignar textos personalizados a los botones
+    document.getElementById('confirm-yes').textContent = textYes;
+    document.getElementById('confirm-no').textContent = textNo;
+    
     _confirmCallback = onYes;
     document.getElementById('confirmModal').classList.add('open');
 }
@@ -895,7 +900,7 @@ document.getElementById('successModal').addEventListener('click', function(e) {
 });
 
 // ============================================================
-//  ACCIONES DE PAGO
+//  ACCIONES DE PAGO Y EDICIÓN
 // ============================================================
 function marcarPagado(id) {
     const debt = debts.find(d => d.id === id);
@@ -974,6 +979,7 @@ function registrarCompra(id) {
 function eliminarDeuda(id) {
     const debt = debts.find(d => d.id === id);
     if (!debt) return;
+    // Aquí mandamos los textos personalizados para eliminar
     showConfirm('🗑', 'Eliminar Registro',
         `¿Eliminar permanentemente "${debt.nombre}"? Esta acción no se puede deshacer desde aquí.`,
         () => {
@@ -984,7 +990,9 @@ function eliminarDeuda(id) {
             renderCategoryFilters();
             updateUI();
             showToast(`🗑 "${nombre}" eliminado`);
-        }
+        },
+        "✔ ELIMINAR",
+        "✖ NO ELIMINAR"
     );
 }
 
@@ -1031,11 +1039,14 @@ function importarJSON(event) {
                 showToast('⚠ El archivo no contiene deudas', 'error'); return;
             }
 
-            // Usar modal en lugar de confirm() nativo
+            // Usar modal dinámico para la importación
             showConfirm('📂', 'Importar Lista',
-                `Se encontraron ${imported.length} registro(s). ¿Deseas REEMPLAZAR tu lista actual? (Pulsa NO CONFIRMAR para AGREGAR al final de tu lista existente)`,
-                () => { debts = imported; finish(); }
+                `Se encontraron ${imported.length} registro(s). ¿Deseas REEMPLAZAR tu lista actual? (Pulsa NO REEMPLAZAR para AGREGAR al final de tu lista existente)`,
+                () => { debts = imported; finish(); },
+                "✔ REEMPLAZAR",
+                "✖ NO REEMPLAZAR (AGREGAR)"
             );
+            
             // Sobreescribir el botón NO para que agregue en lugar de cancelar
             document.getElementById('confirm-no').onclick = function() {
                 cerrarConfirmModal();
