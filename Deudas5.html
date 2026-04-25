@@ -59,8 +59,8 @@
         body { background-color: var(--bg); color: var(--text); padding: 16px; -webkit-tap-highlight-color: transparent; }
         
         .container { max-width: 1100px; margin: 0 auto; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
-        h1 { font-size: 1.5rem; color: var(--primary); }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; position: relative; }
+        h1 { font-size: 1.5rem; color: var(--primary); flex: 1; min-width: max-content; }
 
         /* BOTONES */
         .btn {
@@ -79,7 +79,19 @@
         .btn-danger { background: var(--danger); }
         .btn-purple { background: var(--purple); color: white; }
         .btn-warning { background: var(--warning); color: white; }
+        .btn-info { background: #0ea5e9; color: white; }
         .btn-sm { padding: 6px 10px; font-size: 0.78rem; }
+
+        /* ENLACE DE CONCEPTO */
+        .concepto-link {
+            color: var(--primary);
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            transition: color 0.2s;
+        }
+        .concepto-link:hover { color: #1e40af; }
+        body.dark .concepto-link:hover { color: #93c5fd; }
 
         /* NAV */
         nav { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
@@ -139,21 +151,32 @@
         .badge.pagado { background: #d1fae5; color: #047857; }
         .badge.recurrente { background: #f3e8ff; color: #6b21a8; }
 
+        /* ACCIONES CENTRADAS */
         .actions { display: flex; gap: 5px; flex-wrap: nowrap; align-items: center; justify-content: flex-start; }
         .actions button { padding: 7px 10px; font-size: 0.77rem; min-width: 36px; height: 34px; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }
 
-        /* DROPDOWN CATEGORIAS */
+        /* DROPDOWNS */
         .dropdown-wrapper { position: relative; }
         .dropdown-content {
             display: none; position: absolute; top: calc(100% + 6px); left: 0;
             background: white; border: 1.5px solid var(--border); padding: 12px;
-            z-index: 100; min-width: 200px; box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+            z-index: 1000; min-width: 200px; box-shadow: 0 6px 20px rgba(0,0,0,0.15);
             border-radius: 10px; max-height: 260px; overflow-y: auto;
         }
         .dropdown-wrapper.open .dropdown-content { display: block; }
+        
         .dropdown-content label { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; cursor: pointer; font-size: 0.88rem; padding: 3px 0; }
         .dropdown-content label:last-child { margin-bottom: 0; }
         .dropdown-content input[type=checkbox] { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
+
+        /* SISTEMA DE NOTIFICACIONES */
+        .notif-item { padding: 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s; display: flex; flex-direction: column; gap: 5px; }
+        .notif-item:hover { background: var(--row-hover); }
+        .notif-item.unread { background: #eff6ff; }
+        body.dark .notif-item.unread { background: #1e293b; }
+        .notif-title { font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; color: var(--text); }
+        .notif-msg { font-size: 0.85rem; color: var(--text-light); line-height: 1.4; }
+        .notif-date { font-size: 0.7rem; color: var(--text-light); align-self: flex-end; margin-top: 4px; font-weight: 600;}
 
         /* TOOLBAR LISTA */
         .list-toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; align-items: center; }
@@ -169,10 +192,10 @@
         }
         .undo-bar span { font-size: 0.82rem; color: var(--text-light); flex: 1; }
 
-        /* MODAL EDICION */
+        /* MODALES */
         .modal-overlay {
             display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.45); z-index: 999;
+            background: rgba(0,0,0,0.45); z-index: 9999;
             align-items: center; justify-content: center; padding: 16px;
         }
         .modal-overlay.open { display: flex; }
@@ -212,6 +235,7 @@
             table { min-width: 680px; }
             th, td { padding: 9px 7px; }
             .modal { padding: 18px; }
+            #notif-dropdown { width: 300px !important; right: -50px !important; }
         }
         @media (max-width: 380px) {
             .dashboard { grid-template-columns: 1fr; }
@@ -223,6 +247,24 @@
 <div class="container">
     <header>
         <h1>💳 Control de Deudas</h1>
+        
+        <div style="display:flex; justify-content:flex-end; align-items:center; margin-right: 10px;">
+            <div class="dropdown-wrapper" id="notifDropdownWrapper">
+                <button class="btn btn-outline" id="notifBtn" onclick="toggleNotif(event)" style="position:relative; border:none; font-size:1.4rem; padding:6px; background:transparent;">
+                    🔔
+                    <span id="notif-badge" style="display:none; position:absolute; top:2px; right:2px; background:var(--danger); color:white; font-size:0.65rem; font-weight:bold; padding:2px 6px; border-radius:10px;">0</span>
+                </button>
+                <div class="dropdown-content" id="notif-dropdown" style="right:0; left:auto; width:340px; max-height:480px; padding:0; border-radius:12px; overflow:hidden; z-index:1000; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+                    <div style="padding:14px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                        <strong style="font-size:1rem; color:var(--text);">Notificaciones</strong>
+                        <button style="background:transparent; color:var(--primary); border:none; cursor:pointer; font-size:0.8rem; font-weight:600;" onclick="marcarTodasLeidas()">Marcar todas leídas</button>
+                    </div>
+                    <div id="notif-list" style="max-height:380px; overflow-y:auto; padding:0;">
+                        </div>
+                </div>
+            </div>
+        </div>
+
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
             <button class="btn btn-outline" id="darkModeBtn" onclick="toggleDarkMode()" title="Cambiar modo claro/oscuro" style="font-size:1.1rem; padding:8px 12px;">🌙</button>
             <button class="btn" onclick="showSection('form')">+ Nuevo Registro</button>
@@ -247,7 +289,7 @@
                 <div class="amount text-danger" id="dash-vencido">$0.00</div>
             </div>
             <div class="card" style="border-color: var(--purple);">
-                <h3>Presupuesto Servicios (Mes)</h3>
+                <h3>Presupuesto Servicios</h3>
                 <div class="amount" style="color: var(--purple);" id="dash-servicios">$0.00</div>
             </div>
             <div class="card" style="border-color: var(--primary); padding-top: 13px;">
@@ -299,7 +341,7 @@
             <select id="tipoObligacion" class="form-control" onchange="toggleTipoFormulario()" style="font-weight:600;">
                 <option value="unica">Deuda de Pago Único</option>
                 <option value="plazos">Compra a Plazos (Meses sin intereses)</option>
-                <option value="mensual">Servicio Mensual (Luz, Internet, etc.)</option>
+                <option value="servicio">Servicio Recurrente (Luz, Internet, etc.)</option>
                 <option value="semanal">Gasto Semanal / Despensa / Consumo por días</option>
             </select>
         </div>
@@ -336,6 +378,18 @@
         <div id="plazosDiv" class="form-group" style="display:none; background:#fffbeb; padding:14px; border-left:4px solid var(--warning); border-radius:0 8px 8px 0;">
             <label>Número total de meses a pagar</label>
             <input type="number" id="mesesPlazo" class="form-control" min="2" value="2" inputmode="numeric">
+        </div>
+
+        <div id="servicioDiv" class="form-group" style="display:none; background:#f5f3ff; padding:14px; border-left:4px solid var(--purple); border-radius:0 8px 8px 0;">
+            <label>Frecuencia de cobro</label>
+            <select id="frecuenciaServicio" class="form-control">
+                <option value="1">Mensual (Cada mes)</option>
+                <option value="2">Bimestral (Cada 2 meses)</option>
+                <option value="3">Trimestral (Cada 3 meses)</option>
+                <option value="4">Cuatrimestral (Cada 4 meses)</option>
+                <option value="6">Semestral (Cada 6 meses)</option>
+                <option value="12">Anual (Cada año)</option>
+            </select>
         </div>
 
         <div id="semanalDiv" class="form-group" style="display:none; background:#f0fdf4; padding:14px; border-left:4px solid var(--success); border-radius:0 8px 8px 0;">
@@ -402,6 +456,18 @@
     </main>
 </div>
 
+<div class="modal-overlay" id="detallesModal">
+    <div class="modal" style="max-width: 450px;">
+        <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
+            📄 <span id="detalles-nombre" style="color: var(--primary);">Detalles</span>
+        </h3>
+        <div id="detalles-contenido" style="line-height: 1.5; color: var(--text-light); font-size: 0.95rem;">
+        </div>
+        <div class="modal-footer" style="margin-top: 25px; flex-direction: column; gap: 10px;" id="detalles-footer">
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="editModal">
     <div class="modal">
         <h3>✏️ Editar Registro</h3>
@@ -446,6 +512,37 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="plazosModal">
+    <div class="modal">
+        <h3>📅 Gestionar Pago a Plazos</h3>
+        <input type="hidden" id="plazos-id">
+        <div id="plazos-info" style="margin-bottom: 15px; font-size: 0.95rem; line-height: 1.5; color: var(--text-light);"></div>
+
+        <div class="form-group">
+            <label style="color: var(--primary);">¿Qué deseas hacer?</label>
+            <select id="plazos-accion" class="form-control" onchange="cambiarAccionPlazos()">
+                <option value="pagar">Pagar cuota(s) (Normal o Atrasadas)</option>
+                <option value="adelantar" id="opt-adelantar">Adelantar cuotas</option>
+                <option value="liquidar">Liquidar deuda completa</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="plazos-cantidad-group">
+            <label id="plazos-label-cant">Cantidad de cuotas a procesar</label>
+            <input type="number" id="plazos-cantidad" class="form-control" min="1" value="1" oninput="calcularTotalPlazos()">
+        </div>
+
+        <div style="font-weight: 700; font-size: 1.2rem; color: var(--primary); margin-top: 10px; margin-bottom: 20px; text-align: center; background: var(--bg); padding: 10px; border-radius: 8px;">
+            Total a pagar: <span id="plazos-total-pagar">$0.00</span>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-success" onclick="procesarPlazos()">✔ Confirmar Pago</button>
+            <button class="btn btn-outline" onclick="cerrarPlazosModal()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="confirmModal">
     <div class="modal" style="max-width:360px; text-align:center;">
         <div style="font-size:2rem; margin-bottom:10px;" id="confirm-icon">💳</div>
@@ -471,18 +568,58 @@
 
 <script>
 // ============================================================
-//  ESTADO GLOBAL
+//  ESTADO GLOBAL Y EVENT LISTENERS (DELEGACIÓN)
 // ============================================================
 let debts = [];
 let activeFilters = [];
+let notifications = [];
 
 // Historial para undo/redo
 let history = [];
 let historyIndex = -1;
 const MAX_HISTORY = 50;
 
-// Estado del formulario de edición
 let editingId = null;
+
+// Escuchador global para clics (Esto hace que los botones funcionen en la tabla y en el modal Detalles)
+document.addEventListener('click', function(e) {
+    const actionEl = e.target.closest('[data-action]');
+    if (actionEl && !actionEl.disabled) {
+        const action = actionEl.dataset.action;
+        const id = actionEl.dataset.id;
+        
+        if (action === 'ver-detalles')        abrirDetalles(id);
+        else if (action === 'pagar')          marcarPagado(id);
+        else if (action === 'gestionar-plazo')abrirModalPlazos(id);
+        else if (action === 'servicio')       avanzarMesServicio(id);
+        else if (action === 'compra')         registrarCompra(id);
+        else if (action === 'editar')         abrirEdicion(id);
+        else if (action === 'eliminar')       eliminarDeuda(id);
+    }
+
+    // Cerrar dropdowns al tocar fuera
+    const catWrapper = document.getElementById('catDropdownWrapper');
+    if (catWrapper && !catWrapper.contains(e.target)) {
+        catWrapper.classList.remove('open');
+    }
+    const notifWrapper = document.getElementById('notifDropdownWrapper');
+    if (notifWrapper && !notifWrapper.contains(e.target)) {
+        notifWrapper.classList.remove('open');
+    }
+});
+
+// Cerrar modales al tocar overlay
+document.querySelectorAll('.modal-overlay').forEach(modal => {
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            if (this.id === 'editModal') cerrarModal();
+            else if (this.id === 'plazosModal') cerrarPlazosModal();
+            else if (this.id === 'confirmModal') cerrarConfirmModal();
+            else if (this.id === 'successModal') cerrarSuccessModal();
+            else if (this.id === 'detallesModal') cerrarDetallesModal();
+        }
+    });
+});
 
 // ============================================================
 //  MODO OSCURO
@@ -497,7 +634,6 @@ function toggleDarkMode() {
 //  INICIALIZACIÓN
 // ============================================================
 function init() {
-    // Restaurar modo oscuro
     if (localStorage.getItem('darkMode') === '1') {
         document.body.classList.add('dark');
         document.getElementById('darkModeBtn').textContent = '☀️';
@@ -507,44 +643,167 @@ function init() {
     if (saved) {
         try {
             debts = JSON.parse(saved);
-            // migración de tipo
             debts = debts.map(d => {
                 if (!d.tipo) d.tipo = d.isPlazos ? 'plazos' : 'unica';
+                if (d.tipo === 'mensual') { d.tipo = 'servicio'; d.frecuencia = 1; }
                 return d;
             });
         } catch(e) { debts = []; }
+    }
+
+    const savedNotifs = localStorage.getItem('notifs');
+    if (savedNotifs) {
+        try { notifications = JSON.parse(savedNotifs); } catch(e) { notifications = []; }
     }
 
     const today = new Date();
     document.getElementById('monthSelector').value =
         `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
-    // Guardar estado inicial en historial
     pushHistory('Inicio');
 
     toggleTipoFormulario();
     renderCategoryFilters();
+    checkNotifications(); // Iniciar escáner de alertas
     updateUI();
+}
 
-    // Cerrar dropdown al tocar fuera
-    document.addEventListener('click', function(e) {
-        const wrapper = document.getElementById('catDropdownWrapper');
-        if (wrapper && !wrapper.contains(e.target)) {
-            wrapper.classList.remove('open');
+// ============================================================
+//  SISTEMA DE NOTIFICACIONES
+// ============================================================
+function toggleNotif(e) {
+    e.stopPropagation();
+    document.getElementById('notifDropdownWrapper').classList.toggle('open');
+}
+
+function persistNotifs() {
+    localStorage.setItem('notifs', JSON.stringify(notifications));
+    renderNotificaciones();
+}
+
+function checkNotifications() {
+    let changed = false;
+    const hoy = new Date();
+    hoy.setHours(0,0,0,0);
+
+    debts.forEach(d => {
+        // Ignorar si ya está pagado
+        const status = getStatus(d);
+        if (status.class === 'pagado') return;
+        if (!d.fechaLimite) return;
+
+        const limite = new Date(d.fechaLimite + 'T00:00:00');
+        const diffDays = Math.ceil((limite - hoy) / 86400000);
+        
+        let type = null, title = '', msg = '';
+
+        if (diffDays < 0) {
+            type = 'vencido';
+            title = '¡Pago Atrasado!';
+            msg = `Tu pago de "${d.nombre}" venció el ${d.fechaLimite}. Es importante que revises tu deuda.`;
+        } else if (diffDays <= 7) {
+            type = 'proximo';
+            title = 'Pago Próximo';
+            const diasFaltan = diffDays === 0 ? 'HOY' : `en ${diffDays} día(s)`;
+            msg = `Se acerca tu fecha límite de "${d.nombre}". El pago es ${diasFaltan} (${d.fechaLimite}).`;
+        }
+
+        if (type) {
+            // ID único para no repetir la misma alerta del mismo pago y fecha
+            const uniqueId = `notif_${type}_${d.id}_${d.fechaLimite}`;
+            
+            if (!notifications.some(n => n.id === uniqueId)) {
+                notifications.unshift({
+                    id: uniqueId,
+                    debtId: d.id,
+                    title: title,
+                    msg: msg,
+                    type: type, // 'vencido' o 'proximo'
+                    date: new Date().toLocaleString('es-MX'),
+                    read: false
+                });
+                changed = true;
+            }
         }
     });
 
-    // Cerrar modal al tocar overlay
-    document.getElementById('editModal').addEventListener('click', function(e) {
-        if (e.target === this) cerrarModal();
+    // Limitar a máximo 30 notificaciones
+    if (notifications.length > 30) {
+        notifications = notifications.slice(0, 30);
+        changed = true;
+    }
+
+    if (changed || notifications.length === 0) persistNotifs();
+    else renderNotificaciones();
+}
+
+function renderNotificaciones() {
+    const list = document.getElementById('notif-list');
+    const badge = document.getElementById('notif-badge');
+    list.innerHTML = '';
+
+    const unreadCount = notifications.filter(n => !n.read).length;
+    
+    if (unreadCount > 0) {
+        badge.style.display = 'block';
+        badge.textContent = unreadCount > 9 ? '+9' : unreadCount;
+    } else {
+        badge.style.display = 'none';
+    }
+
+    if (notifications.length === 0) {
+        list.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-light); font-size:0.9rem;">No tienes notificaciones pendientes.</div>`;
+        return;
+    }
+
+    notifications.forEach(n => {
+        const icon = n.type === 'vencido' ? '⚠️' : '🗓️';
+        const colorTitle = n.type === 'vencido' ? 'var(--danger)' : 'var(--warning)';
+        
+        list.innerHTML += `
+            <div class="notif-item ${n.read ? '' : 'unread'}" onclick="clickNotificacion('${n.id}', '${n.debtId}')">
+                <div class="notif-title"><span style="font-size:1.1rem;">${icon}</span> <span style="color:${colorTitle};">${n.title}</span></div>
+                <div class="notif-msg">${n.msg}</div>
+                <div class="notif-date">${n.date}</div>
+            </div>
+        `;
     });
+}
+
+function clickNotificacion(notifId, debtId) {
+    // 1. Marcar como leída
+    const notif = notifications.find(n => n.id === notifId);
+    if (notif && !notif.read) {
+        notif.read = true;
+        persistNotifs();
+    }
+    
+    // 2. Cerrar el menú
+    document.getElementById('notifDropdownWrapper').classList.remove('open');
+    
+    // 3. Llevar al usuario al listado y abrir detalles
+    showSection('list');
+    
+    // Validar si la deuda aún existe antes de abrir detalles
+    const exists = debts.some(d => d.id === debtId);
+    if(exists) {
+        abrirDetalles(debtId);
+    } else {
+        showToast('⚠ Este registro ya fue eliminado o pagado', 'error');
+    }
+}
+
+function marcarTodasLeidas() {
+    let changed = false;
+    notifications.forEach(n => { if (!n.read) { n.read = true; changed = true; } });
+    if (changed) persistNotifs();
+    document.getElementById('notifDropdownWrapper').classList.remove('open');
 }
 
 // ============================================================
 //  HISTORIAL (UNDO / REDO)
 // ============================================================
 function pushHistory(label) {
-    // Descarta el futuro si estamos en medio del historial
     history = history.slice(0, historyIndex + 1);
     history.push({ debts: JSON.stringify(debts), label });
     if (history.length > MAX_HISTORY) history.shift();
@@ -593,15 +852,13 @@ function updateUndoRedoButtons() {
 }
 
 // ============================================================
-//  PERSISTENCIA
+//  PERSISTENCIA Y UTILIDADES
 // ============================================================
 function persistDebts() {
     localStorage.setItem('debts', JSON.stringify(debts));
+    checkNotifications(); // Actualizar alertas si cambian los datos
 }
 
-// ============================================================
-//  UTILIDADES
-// ============================================================
 const formatMoney = (amount) =>
     new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount || 0);
 
@@ -620,7 +877,7 @@ function getStatus(debt) {
 
     if (diffDays < 0) return { label: 'Vencido', class: 'vencido' };
     if (diffDays <= 7) return { label: 'Próximo', class: 'proximo' };
-    if (debt.tipo === 'mensual') return { label: 'Al corriente', class: 'pendiente' };
+    if (debt.tipo === 'servicio') return { label: 'Al corriente', class: 'pendiente' };
     return { label: 'Pendiente', class: 'pendiente' };
 }
 
@@ -634,16 +891,13 @@ function showToast(msg, type = '') {
 }
 
 // ============================================================
-//  SECCIONES
+//  SECCIONES Y FILTROS
 // ============================================================
 function showSection(sectionId) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(sectionId + '-section').classList.add('active');
 }
 
-// ============================================================
-//  CATEGORÍAS FILTER DROPDOWN
-// ============================================================
 function toggleCatDropdown(e) {
     e.stopPropagation();
     document.getElementById('catDropdownWrapper').classList.toggle('open');
@@ -685,6 +939,7 @@ function toggleTipoFormulario() {
     const tipo = document.getElementById('tipoObligacion').value;
     const plazosDiv = document.getElementById('plazosDiv');
     const semanalDiv = document.getElementById('semanalDiv');
+    const servicioDiv = document.getElementById('servicioDiv');
     const fechaLimiteDiv = document.getElementById('fechaLimiteDiv');
     const labelMonto = document.getElementById('labelMonto');
     const labelFecha = document.getElementById('labelFecha');
@@ -692,6 +947,7 @@ function toggleTipoFormulario() {
 
     plazosDiv.style.display = 'none';
     semanalDiv.style.display = 'none';
+    servicioDiv.style.display = 'none';
     fechaLimiteDiv.style.display = 'block';
     fechaInput.required = true;
 
@@ -702,8 +958,9 @@ function toggleTipoFormulario() {
         plazosDiv.style.display = 'block';
         labelMonto.textContent = 'Monto Total de la Compra ($)';
         labelFecha.textContent = 'Fecha del Próximo Pago';
-    } else if (tipo === 'mensual') {
-        labelMonto.textContent = 'Monto Promedio por Mes ($)';
+    } else if (tipo === 'servicio') {
+        servicioDiv.style.display = 'block';
+        labelMonto.textContent = 'Monto promedio por periodo ($)';
         labelFecha.textContent = 'Próxima Fecha de Corte/Pago';
     } else if (tipo === 'semanal') {
         semanalDiv.style.display = 'block';
@@ -744,8 +1001,9 @@ function guardarRegistro() {
         nueva.fechaLimite = fechaLimite;
         nueva.mesesTotal = parseInt(document.getElementById('mesesPlazo').value);
         nueva.mesesPagados = 0;
-    } else if (tipo === 'mensual') {
+    } else if (tipo === 'servicio') {
         nueva.fechaLimite = fechaLimite;
+        nueva.frecuencia = parseInt(document.getElementById('frecuenciaServicio').value) || 1;
     } else if (tipo === 'semanal') {
         nueva.dias = Array.from(document.querySelectorAll('.dia-cb:checked')).map(cb => parseInt(cb.value));
     }
@@ -767,6 +1025,7 @@ function resetFormulario() {
     document.getElementById('fechaLimite').value = '';
     document.getElementById('notas').value = '';
     document.getElementById('mesesPlazo').value = '2';
+    document.getElementById('frecuenciaServicio').value = '1';
     document.querySelectorAll('.dia-cb').forEach(cb => cb.checked = false);
     document.getElementById('tipoObligacion').value = 'unica';
     toggleTipoFormulario();
@@ -778,9 +1037,101 @@ function cancelarFormulario() {
 }
 
 // ============================================================
-//  MODAL EDICIÓN
+//  MODAL EDICIÓN Y DETALLES
 // ============================================================
+function abrirDetalles(id) {
+    const debt = debts.find(d => d.id === id);
+    if (!debt) return;
+
+    let content = '';
+    const total = debt.monto;
+    const fechaCreacion = debt.fechaCreacion || 'Fecha no registrada';
+
+    content += `<p style="margin-bottom: 8px;"><strong style="color:var(--text);">Categoría:</strong> ${debt.categoria}</p>`;
+    content += `<p style="margin-bottom: 8px;"><strong style="color:var(--text);">Tipo de Registro:</strong> ${debt.tipo.toUpperCase()}</p>`;
+    content += `<p style="margin-bottom: 8px;"><strong style="color:var(--text);">Fecha de Registro (Inicio):</strong> ${fechaCreacion}</p>`;
+
+    const todayObj = new Date();
+    const currentMonthKey = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}`;
+    const isPaidThisMonth = debt.ultimaFechaPago && debt.ultimaFechaPago.startsWith(currentMonthKey);
+    const lockStyle = 'style="background:var(--border);color:var(--text-light);cursor:not-allowed;" disabled';
+    const isFullyPaid = debt.tipo === 'plazos' ? debt.mesesPagados >= debt.mesesTotal : (debt.tipo === 'unica' ? (debt.pagado || 0) >= debt.monto : false);
+
+    if (debt.tipo === 'unica') {
+        const pagado = debt.pagado || 0;
+        const restante = total - pagado;
+        content += `<p style="margin-bottom: 8px;"><strong style="color:var(--text);">Deuda Total:</strong> ${formatMoney(total)}</p>`;
+        content += `<p style="margin-bottom: 8px;"><strong style="color:var(--text);">Monto Pagado:</strong> <span style="color:var(--success);">${formatMoney(pagado)}</span></p>`;
+        content += `<p style="margin-bottom: 8px;"><strong style="color:var(--text);">Monto Restante:</strong> <span style="color:var(--danger);">${formatMoney(restante)}</span></p>`;
+        content += `<p style="margin-bottom: 8px;"><strong style="color:var(--text);">Fecha Límite:</strong> ${debt.fechaLimite}</p>`;
+    } else if (debt.tipo === 'plazos') {
+        const cuota = total / debt.mesesTotal;
+        const pagado = cuota * debt.mesesPagados;
+        const restante = total - pagado;
+        
+        content += `<p style="margin-bottom: 8px;"><strong style="color:var(--text);">Deuda Total Original:</strong> ${formatMoney(total)}</p>`;
+        content += `<p style="margin-bottom: 8px;"><strong style="color:var(--text);">Monto Pagado:</strong> <span style="color:var(--success);">${formatMoney(pagado)}</span> (${debt.mesesPagados} de ${debt.mesesTotal} meses)</p>`;
+        content += `<p style="margin-bottom: 8px;"><strong style="color:var(--text);">Monto Restante:</strong> <span style="color:var(--danger);">${formatMoney(restante)}</span></p>`;
+        
+        if (debt.mesesPagados < debt.mesesTotal) {
+            content += `<p style="margin-bottom: 8px;"><strong style="color:var(--text);">Próximo Pago:</strong> ${debt.fechaLimite}</p>`;
+            let d = new Date(debt.fechaLimite + 'T00:00:00');
+            let faltantes = debt.mesesTotal - debt.mesesPagados - 1; 
+            if (faltantes > 0) d.setMonth(d.getMonth() + faltantes);
+            content += `<p style="margin-bottom: 8px;"><strong style="color:var(--text);">Fecha Estimada de Término:</strong> ${d.toISOString().split('T')[0]}</p>`;
+        } else {
+            content += `<p style="margin-bottom: 8px;"><strong style="color:var(--success);">Estado:</strong> Deuda liquidada totalmente.</p>`;
+        }
+    } else if (debt.tipo === 'servicio') {
+        const frecText = debt.frecuencia == 1 ? 'mensual' : debt.frecuencia == 2 ? 'bimestral' : debt.frecuencia == 12 ? 'anual' : `por período`;
+        content += `<p style="margin-bottom: 8px;"><strong style="color:var(--text);">Costo ${frecText}:</strong> ${formatMoney(total)}</p>`;
+        content += `<p style="margin-bottom: 8px;"><strong style="color:var(--text);">Próximo Corte:</strong> ${debt.fechaLimite}</p>`;
+    } else if (debt.tipo === 'semanal') {
+        const nomDias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+        const diasTexto = (debt.dias || []).map(d => nomDias[d]).join(', ');
+        const costoSem = total * (debt.dias || []).length;
+        content += `<p style="margin-bottom: 8px;"><strong style="color:var(--text);">Días de consumo:</strong> ${diasTexto}</p>`;
+        content += `<p style="margin-bottom: 8px;"><strong style="color:var(--text);">Gasto Semanal Aprox:</strong> ${formatMoney(costoSem)}</p>`;
+    }
+
+    if (debt.notas) {
+        content += `<div style="margin-top: 15px; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;"><strong style="color:var(--text);">Notas de usuario:</strong><br>${debt.notas}</div>`;
+    }
+
+    // ====== BOTONES DE ACCIÓN PARA EL MODAL ======
+    let modalActionBtn = '';
+    if (debt.tipo === 'unica' && !isFullyPaid) {
+        modalActionBtn = `<button class="btn btn-success" data-action="pagar" data-id="${debt.id}" style="flex:1;">✔ Pagar Todo</button>`;
+    } else if (debt.tipo === 'plazos' && !isFullyPaid) {
+        modalActionBtn = `<button class="btn btn-info" data-action="gestionar-plazo" data-id="${debt.id}" style="flex:1;">💳 Gestionar Pago</button>`;
+    } else if (debt.tipo === 'servicio') {
+        const txt = isPaidThisMonth ? '✔ Periodo Pagado' : '✔ Registrar Pago';
+        modalActionBtn = `<button class="btn btn-purple" ${isPaidThisMonth ? lockStyle : ''} data-action="servicio" data-id="${debt.id}" style="flex:1;">${txt}</button>`;
+    } else if (debt.tipo === 'semanal') {
+        modalActionBtn = `<button class="btn btn-outline" style="border-color:var(--success);color:var(--success);flex:1;" data-action="compra" data-id="${debt.id}">🛒 Confirmar Compra</button>`;
+    }
+
+    let footerHTML = `
+        <div style="display:flex; gap:8px; width:100%; flex-wrap:wrap; margin-bottom:10px;">
+            ${modalActionBtn}
+            <button class="btn btn-warning" data-action="editar" data-id="${debt.id}" title="Editar" style="flex:1; color:white;">✏️ Editar</button>
+            <button class="btn btn-danger" data-action="eliminar" data-id="${debt.id}" title="Eliminar" style="flex:1;">🗑 Eliminar</button>
+        </div>
+        <button class="btn btn-outline" onclick="cerrarDetallesModal()" style="width: 100%; justify-content: center;">Cerrar Detalles</button>
+    `;
+
+    document.getElementById('detalles-nombre').textContent = debt.nombre;
+    document.getElementById('detalles-contenido').innerHTML = content;
+    document.getElementById('detalles-footer').innerHTML = footerHTML;
+    document.getElementById('detallesModal').classList.add('open');
+}
+
+function cerrarDetallesModal() {
+    document.getElementById('detallesModal').classList.remove('open');
+}
+
 function abrirEdicion(id) {
+    cerrarDetallesModal(); // Se cierra si se abrió desde detalles
     const debt = debts.find(d => d.id === id);
     if (!debt) return;
 
@@ -791,7 +1142,6 @@ function abrirEdicion(id) {
     document.getElementById('edit-fecha').value = debt.fechaLimite || '';
     document.getElementById('edit-notas').value = debt.notas || '';
 
-    // Meses (solo para plazos)
     const mesesGroup = document.getElementById('edit-meses-group');
     if (debt.tipo === 'plazos') {
         mesesGroup.style.display = 'block';
@@ -800,7 +1150,6 @@ function abrirEdicion(id) {
         mesesGroup.style.display = 'none';
     }
 
-    // Ocultar fecha para semanal
     const fechaGroup = document.getElementById('edit-fecha-group');
     fechaGroup.style.display = debt.tipo === 'semanal' ? 'none' : 'block';
 
@@ -855,7 +1204,6 @@ function showConfirm(icon, title, msg, onYes, textYes = "✔ CONFIRMAR PAGO", te
     document.getElementById('confirm-title').textContent = title;
     document.getElementById('confirm-msg').textContent = msg;
     
-    // Asignar textos personalizados a los botones
     document.getElementById('confirm-yes').textContent = textYes;
     document.getElementById('confirm-no').textContent = textNo;
     
@@ -878,7 +1226,6 @@ function showSuccess(title, msg) {
     document.getElementById('successModal').classList.add('open');
 }
 
-// Botones del modal de confirmación — registrados una sola vez
 document.getElementById('confirm-yes').addEventListener('click', function() {
     const fn = _confirmCallback;
     document.getElementById('confirmModal').classList.remove('open');
@@ -889,20 +1236,143 @@ document.getElementById('confirm-no').addEventListener('click', function() {
     document.getElementById('confirmModal').classList.remove('open');
     _confirmCallback = null;
 });
-document.getElementById('confirmModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        document.getElementById('confirmModal').classList.remove('open');
-        _confirmCallback = null;
-    }
-});
-document.getElementById('successModal').addEventListener('click', function(e) {
-    if (e.target === this) cerrarSuccessModal();
-});
+
 
 // ============================================================
-//  ACCIONES DE PAGO Y EDICIÓN
+//  GESTIÓN DE PLAZOS
+// ============================================================
+function abrirModalPlazos(id) {
+    cerrarDetallesModal(); // Se cierra si se abrió desde detalles
+    const debt = debts.find(d => d.id === id);
+    if (!debt) return;
+
+    document.getElementById('plazos-id').value = id;
+
+    const cuota = debt.monto / debt.mesesTotal;
+    const restantes = debt.mesesTotal - debt.mesesPagados;
+    const hoy = new Date();
+    const diaMes = hoy.getDate();
+
+    let infoHTML = `
+        <strong style="color:var(--text);">Deuda:</strong> ${debt.nombre}<br>
+        <strong style="color:var(--text);">Cuota mensual:</strong> ${formatMoney(cuota)}<br>
+        <strong style="color:var(--text);">Progreso:</strong> ${debt.mesesPagados} de ${debt.mesesTotal} meses pagados<br>
+        <strong style="color:var(--text);">Próximo vencimiento:</strong> ${debt.fechaLimite}<br>
+    `;
+    
+    const limiteDate = new Date(debt.fechaLimite + 'T00:00:00');
+    let atrasado = (hoy > limiteDate); 
+    const aptoAdelantar = (!atrasado && diaMes <= 20);
+
+    const optAdelantar = document.getElementById('opt-adelantar');
+    if (aptoAdelantar) {
+        optAdelantar.style.display = 'block';
+    } else {
+        optAdelantar.style.display = 'none';
+        if (document.getElementById('plazos-accion').value === 'adelantar') {
+            document.getElementById('plazos-accion').value = 'pagar';
+        }
+    }
+
+    if (atrasado) {
+        infoHTML += `<br><span style="color:var(--danger); font-weight:bold;">¡Tienes cuotas atrasadas o vencidas!</span>`;
+    }
+
+    document.getElementById('plazos-info').innerHTML = infoHTML;
+    document.getElementById('plazos-cantidad').max = restantes;
+    document.getElementById('plazos-cantidad').value = 1;
+
+    cambiarAccionPlazos();
+    document.getElementById('plazosModal').classList.add('open');
+}
+
+function cambiarAccionPlazos() {
+    const accion = document.getElementById('plazos-accion').value;
+    const group = document.getElementById('plazos-cantidad-group');
+    const label = document.getElementById('plazos-label-cant');
+    
+    if (accion === 'liquidar') {
+        group.style.display = 'none';
+    } else {
+        group.style.display = 'block';
+        if (accion === 'adelantar') label.textContent = '¿Cuántas cuotas extras deseas adelantar?';
+        else label.textContent = 'Cantidad de cuotas a pagar';
+    }
+    calcularTotalPlazos();
+}
+
+function calcularTotalPlazos() {
+    const id = document.getElementById('plazos-id').value;
+    const debt = debts.find(d => d.id === id);
+    const accion = document.getElementById('plazos-accion').value;
+    let total = 0;
+
+    const cuota = debt.monto / debt.mesesTotal;
+    const restantes = debt.mesesTotal - debt.mesesPagados;
+
+    if (accion === 'liquidar') {
+        total = cuota * restantes;
+    } else {
+        let cant = parseInt(document.getElementById('plazos-cantidad').value) || 1;
+        if (cant > restantes) cant = restantes;
+        total = cuota * cant;
+    }
+
+    document.getElementById('plazos-total-pagar').textContent = formatMoney(total);
+}
+
+function cerrarPlazosModal() {
+    document.getElementById('plazosModal').classList.remove('open');
+}
+
+function procesarPlazos() {
+    const id = document.getElementById('plazos-id').value;
+    const debt = debts.find(d => d.id === id);
+    const accion = document.getElementById('plazos-accion').value;
+    const restantes = debt.mesesTotal - debt.mesesPagados;
+
+    let cant = 0;
+    if (accion === 'liquidar') {
+        cant = restantes;
+    } else {
+        cant = parseInt(document.getElementById('plazos-cantidad').value) || 1;
+        if (cant > restantes) cant = restantes;
+    }
+
+    if (cant <= 0) return;
+
+    const totalPagado = cant * (debt.monto / debt.mesesTotal);
+    const textoAccion = accion === 'liquidar' ? 'Liquidar toda la deuda' : `Pagar ${cant} cuota(s)`;
+
+    showConfirm('📅', textoAccion,
+        `¿Confirmas el pago por la cantidad de ${formatMoney(totalPagado)} a "${debt.nombre}"?`,
+        () => {
+            debt.mesesPagados += cant;
+            debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
+
+            let date = new Date(debt.fechaLimite + 'T00:00:00');
+            date.setMonth(date.getMonth() + cant);
+            debt.fechaLimite = date.toISOString().split('T')[0];
+
+            pushHistory(`Plazo: ${debt.nombre} (${cant} cuotas)`);
+            persistDebts();
+            updateUI();
+            cerrarPlazosModal();
+
+            if (debt.mesesPagados >= debt.mesesTotal) {
+                showSuccess('¡Felicidades!', `Has liquidado por completo los pagos de "${debt.nombre}".`);
+            } else {
+                showSuccess('✔ Pago Registrado', `Se procesaron correctamente ${cant} cuota(s). Te faltan ${debt.mesesTotal - debt.mesesPagados}.`);
+            }
+        }
+    );
+}
+
+// ============================================================
+//  ACCIONES DE PAGO GENERALES
 // ============================================================
 function marcarPagado(id) {
+    cerrarDetallesModal(); // Se cierra si se abrió desde detalles
     const debt = debts.find(d => d.id === id);
     if (!debt) return;
     showConfirm('💳', 'Confirmar Pago Total',
@@ -918,39 +1388,17 @@ function marcarPagado(id) {
     );
 }
 
-function pagarPlazoMensual(id) {
-    const debt = debts.find(d => d.id === id);
-    if (!debt || debt.mesesPagados >= debt.mesesTotal) return;
-    const pagoNum = debt.mesesPagados + 1;
-    const cuota = debt.monto / debt.mesesTotal;
-    showConfirm('📅', `Pago ${pagoNum} de ${debt.mesesTotal}`,
-        `¿Confirmas el pago ${pagoNum} de ${debt.mesesTotal} de "${debt.nombre}"?\nMonto: ${formatMoney(cuota)}`,
-        () => {
-            debt.mesesPagados++;
-            let date = new Date(debt.fechaLimite + 'T00:00:00');
-            date.setMonth(date.getMonth() + 1);
-            debt.fechaLimite = date.toISOString().split('T')[0];
-            debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
-            pushHistory(`Plazo: ${debt.nombre}`);
-            persistDebts();
-            updateUI();
-            const quedan = debt.mesesTotal - debt.mesesPagados;
-            const msg = quedan > 0
-                ? `Pago ${debt.mesesPagados} de ${debt.mesesTotal} registrado correctamente. Faltan ${quedan} pagos.`
-                : `¡Felicidades! Completaste todos los pagos de "${debt.nombre}".`;
-            showSuccess(`✔ Pago ${debt.mesesPagados} de ${debt.mesesTotal}`, msg);
-        }
-    );
-}
-
 function avanzarMesServicio(id) {
+    cerrarDetallesModal(); // Se cierra si se abrió desde detalles
     const debt = debts.find(d => d.id === id);
     if (!debt) return;
     showConfirm('🔄', 'Registrar Pago de Servicio',
-        `¿Confirmas el pago de "${debt.nombre}" por ${formatMoney(debt.monto)} este mes?`,
+        `¿Confirmas el pago de "${debt.nombre}" por ${formatMoney(debt.monto)} para este periodo?`,
         () => {
             let date = new Date(debt.fechaLimite + 'T00:00:00');
-            date.setMonth(date.getMonth() + 1);
+            let frec = parseInt(debt.frecuencia) || 1;
+            date.setMonth(date.getMonth() + frec);
+            
             debt.fechaLimite = date.toISOString().split('T')[0];
             debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
             pushHistory(`Servicio: ${debt.nombre}`);
@@ -962,6 +1410,7 @@ function avanzarMesServicio(id) {
 }
 
 function registrarCompra(id) {
+    cerrarDetallesModal(); // Se cierra si se abrió desde detalles
     const debt = debts.find(d => d.id === id);
     if (!debt) return;
     showConfirm('🛒', 'Registrar Compra',
@@ -977,9 +1426,9 @@ function registrarCompra(id) {
 }
 
 function eliminarDeuda(id) {
+    cerrarDetallesModal(); // Se cierra si se abrió desde detalles
     const debt = debts.find(d => d.id === id);
     if (!debt) return;
-    // Aquí mandamos los textos personalizados para eliminar
     showConfirm('🗑', 'Eliminar Registro',
         `¿Eliminar permanentemente "${debt.nombre}"? Esta acción no se puede deshacer desde aquí.`,
         () => {
@@ -1039,7 +1488,6 @@ function importarJSON(event) {
                 showToast('⚠ El archivo no contiene deudas', 'error'); return;
             }
 
-            // Usar modal dinámico para la importación
             showConfirm('📂', 'Importar Lista',
                 `Se encontraron ${imported.length} registro(s). ¿Deseas REEMPLAZAR tu lista actual? (Pulsa NO REEMPLAZAR para AGREGAR al final de tu lista existente)`,
                 () => { debts = imported; finish(); },
@@ -1047,13 +1495,11 @@ function importarJSON(event) {
                 "✖ NO REEMPLAZAR (AGREGAR)"
             );
             
-            // Sobreescribir el botón NO para que agregue en lugar de cancelar
             document.getElementById('confirm-no').onclick = function() {
                 cerrarConfirmModal();
                 const existingIds = new Set(debts.map(d => d.id));
                 imported.forEach(d => { if (!existingIds.has(d.id)) debts.push(d); });
                 finish();
-                // Restaurar comportamiento normal del botón
                 document.getElementById('confirm-no').onclick = cerrarConfirmModal;
             };
 
@@ -1069,7 +1515,6 @@ function importarJSON(event) {
         }
     };
     reader.readAsText(file);
-    // Reset input para poder volver a seleccionar el mismo archivo
     event.target.value = '';
 }
 
@@ -1107,7 +1552,7 @@ function updateUI() {
 
         if (debt.tipo === 'unica' || debt.tipo === 'plazos') tPendiente += restantePagar;
         if (status.class === 'vencido') tVencido += restantePagar;
-        if (debt.tipo === 'mensual') tServicios += debt.monto;
+        if (debt.tipo === 'servicio') tServicios += debt.monto;
 
         const matchesMonth = monthInput ? debt.fechaLimite.startsWith(monthInput) : true;
         if (matchesMonth) {
@@ -1165,13 +1610,13 @@ function updateUI() {
                 <strong style="color:var(--danger);">Resta: ${formatMoney(resta)}</strong><br>
                 <small style="color:var(--text-light);">Ahorro/sem: ${formatMoney(cuota/4.3)}</small>`;
             if (status.class !== 'pagado') {
-                const txt = isPaidThisMonth ? '✔ Mes Pagado' : '✔ Pagar Cuota';
-                actionBtn = `<button class="btn btn-success btn-sm" ${isPaidThisMonth ? lockStyle : ''} data-action="plazo" data-id="${debt.id}">${txt}</button>`;
+                actionBtn = `<button class="btn btn-info btn-sm" data-action="gestionar-plazo" data-id="${debt.id}">💳 Gestionar Pago</button>`;
             }
 
-        } else if (debt.tipo === 'mensual') {
-            detallesHTML = `<strong style="color:var(--primary);">Costo: ${formatMoney(debt.monto)}/mes</strong><br><small style="color:var(--text-light);">Ahorro/sem: ${formatMoney(debt.monto/4.3)}</small>`;
-            const txt = isPaidThisMonth ? '✔ Mes Pagado' : '✔ Registrar Pago';
+        } else if (debt.tipo === 'servicio') {
+            const frecText = debt.frecuencia == 1 ? '/mes' : debt.frecuencia == 2 ? '/bimestre' : debt.frecuencia == 12 ? '/año' : `/período`;
+            detallesHTML = `<strong style="color:var(--primary);">Costo: ${formatMoney(debt.monto)}${frecText}</strong><br><small style="color:var(--text-light);">Ahorro/sem: ${formatMoney(debt.monto/4.3)}</small>`;
+            const txt = isPaidThisMonth ? '✔ Periodo Pagado' : '✔ Registrar Pago';
             actionBtn = `<button class="btn btn-purple btn-sm" ${isPaidThisMonth ? lockStyle : ''} data-action="servicio" data-id="${debt.id}">${txt}</button>`;
 
         } else if (debt.tipo === 'semanal') {
@@ -1188,7 +1633,10 @@ function updateUI() {
 
         listContainer.innerHTML += `
             <tr>
-                <td><strong>${debt.nombre}</strong><br><small style="color:var(--text-light);">${debt.notas || ''}</small></td>
+                <td>
+                    <strong class="concepto-link" data-action="ver-detalles" data-id="${debt.id}" title="Ver desglose completo">${debt.nombre}</strong>
+                    <br><small style="color:var(--text-light);">${debt.notas || ''}</small>
+                </td>
                 <td><span class="badge" style="background:#e2e8f0;color:#334155;">${debt.categoria}</span></td>
                 <td style="white-space:nowrap;">${debt.tipo.toUpperCase()}</td>
                 <td>${detallesHTML}</td>
@@ -1210,19 +1658,6 @@ function updateUI() {
     document.getElementById('dash-month-total').textContent = formatMoney(tMesSel);
 
     persistDebts();
-    // Delegación de eventos para la tabla — funciona en iOS y Android
-    document.getElementById('debt-list').addEventListener('click', function(e) {
-        const btn = e.target.closest('button[data-action]');
-        if (!btn || btn.disabled) return;
-        const action = btn.dataset.action;
-        const id = btn.dataset.id;
-        if (action === 'pagar')         marcarPagado(id);
-        else if (action === 'plazo')    pagarPlazoMensual(id);
-        else if (action === 'servicio') avanzarMesServicio(id);
-        else if (action === 'compra')   registrarCompra(id);
-        else if (action === 'editar')   abrirEdicion(id);
-        else if (action === 'eliminar') eliminarDeuda(id);
-    });
 }
 
 // ============================================================
