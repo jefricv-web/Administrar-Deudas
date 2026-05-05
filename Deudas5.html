@@ -90,15 +90,16 @@
         .concepto-link:hover { color: #1e40af; }
         body.dark .concepto-link:hover { color: #93c5fd; }
 
+        .text-success { color: var(--success) !important; }
+        .text-danger { color: var(--danger) !important; }
+
         nav { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-        nav .btn { flex: 1 1 auto; justify-content: center; min-width: 130px; }
+        nav .btn { flex: 1 1 auto; justify-content: center; min-width: 100px; }
 
         .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
-        .card { background: var(--surface); padding: 18px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.09); border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; }
+        .card { background: var(--surface); padding: 18px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.09); border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; transition: 0.2s; }
         .card h3 { font-size: 0.82rem; color: var(--text-light); margin-bottom: 6px; }
         .card .amount { font-size: 1.45rem; font-weight: bold; }
-        .text-danger { color: var(--danger); }
-        .text-warning { color: var(--warning); }
         .text-primary { color: var(--primary); }
 
         .section { background: var(--surface); padding: 20px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.09); margin-bottom: 20px; display: none; }
@@ -258,6 +259,7 @@
     <nav>
         <button class="btn btn-outline" onclick="showSection('dashboard')">📊 Resumen</button>
         <button class="btn btn-outline" onclick="showSection('list')">📋 Lista Completa</button>
+        <button class="btn btn-outline" onclick="showSection('income')" style="border-color: var(--success); color: var(--success);">💰 Ingresos</button>
     </nav>
 
     <main id="dashboard-section" class="section active">
@@ -272,7 +274,7 @@
                 <h3>Vencido / Atrasado</h3>
                 <div class="amount text-danger" id="dash-vencido">$0.00</div>
             </div>
-            <div class="card" style="border-color: var(--purple);">
+            <div class="card" style="border-color: var(--purple); cursor:pointer;" onclick="abrirDesgloseServicios()" title="Ver desglose de servicios">
                 <h3>Presupuesto Servicios</h3>
                 <div class="amount" style="color: var(--purple);" id="dash-servicios">$0.00</div>
             </div>
@@ -285,6 +287,14 @@
                     <button class="btn btn-outline" style="font-size:0.78rem; padding:5px; border-color:var(--primary); color:var(--primary);" onclick="clearMonthFilter()">Mostrar todas las deudas</button>
                     <div class="amount text-primary" id="dash-month-total">$0.00</div>
                 </div>
+            </div>
+            <div class="card" style="border-color: var(--success);">
+                <h3>Ingresos del Mes</h3>
+                <div class="amount text-success" id="dash-ingresos">$0.00</div>
+            </div>
+            <div class="card" style="border-color: var(--danger);">
+                <h3>Falta para saldar del Mes</h3>
+                <div class="amount text-danger" id="dash-restante">$0.00</div>
             </div>
         </div>
         
@@ -313,7 +323,63 @@
                     <input type="file" accept=".json" id="fileImportInput" style="display:none;" onchange="importarJSON(event)">
                 </label>
             </div>
-            <p style="font-size:0.78rem; color:var(--text-light); margin-top:8px;">Exporta un archivo .json con todas tus deudas. Puedes importarlo en cualquier dispositivo para restaurar tu lista.</p>
+            <p style="font-size:0.78rem; color:var(--text-light); margin-top:8px;">Exporta un archivo .json con todas tus deudas e ingresos. Puedes importarlo en cualquier dispositivo para restaurar tu lista.</p>
+        </div>
+    </main>
+
+    <main id="income-section" class="section">
+        <h2>💰 Registro de Ingresos</h2>
+        
+        <div class="undo-bar" style="margin-top: 15px;">
+            <button class="btn btn-outline btn-sm btn-undo-action" onclick="undo()" disabled title="Deshacer último cambio">↩ Deshacer</button>
+            <button class="btn btn-outline btn-sm btn-redo-action" onclick="redo()" disabled title="Rehacer">↪ Rehacer</button>
+            <span class="undo-hint-text">Sin cambios recientes</span>
+        </div>
+
+        <div class="dashboard" style="margin-top: 15px;">
+            <div class="card" style="border-color: var(--success);">
+                <h3>Ingresos del Mes</h3>
+                <div class="amount text-success" id="income-month-total">$0.00</div>
+            </div>
+            <div class="card" style="border-color: var(--danger);">
+                <h3>Falta para saldar del Mes</h3>
+                <div class="amount text-danger" id="income-month-restante">$0.00</div>
+            </div>
+        </div>
+
+        <div style="background: var(--bg); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border);">
+            <h3 style="margin-bottom: 10px; font-size: 1rem;">➕ Añadir Nuevo Ingreso</h3>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <div class="form-group" style="flex: 1; min-width: 120px;">
+                    <label>Monto ($)</label>
+                    <input type="number" id="inc-monto" class="form-control" placeholder="0.00" min="0.01" step="0.01">
+                </div>
+                <div class="form-group" style="flex: 1; min-width: 140px;">
+                    <label>Fecha de Ingreso</label>
+                    <input type="date" id="inc-fecha" class="form-control">
+                </div>
+                <div class="form-group" style="flex: 2; min-width: 200px;">
+                    <label>Origen (Quién / De dónde)</label>
+                    <input type="text" id="inc-origen" class="form-control" placeholder="Ej. Quincena, Venta, etc.">
+                </div>
+                <div style="display: flex; align-items: flex-end; margin-bottom: 14px;">
+                    <button class="btn btn-success" onclick="guardarIngreso()" style="height: 46px;">➕ Guardar</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Origen / Descripción</th>
+                        <th>Monto Ingresado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="income-list"></tbody>
+            </table>
         </div>
     </main>
 
@@ -401,12 +467,15 @@
     </main>
 
     <main id="list-section" class="section">
-        <h2>📋 Listado Completo</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:14px;">
+            <h2 style="margin:0;">📋 Listado Completo</h2>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('ayudaModal').classList.add('open')">ℹ️ Cómo funcionan</button>
+        </div>
         
         <div class="undo-bar">
-            <button class="btn btn-outline btn-sm" id="btn-undo" onclick="undo()" disabled title="Deshacer último cambio">↩ Deshacer</button>
-            <button class="btn btn-outline btn-sm" id="btn-redo" onclick="redo()" disabled title="Rehacer">↪ Rehacer</button>
-            <span id="undo-hint">Sin cambios recientes</span>
+            <button class="btn btn-outline btn-sm btn-undo-action" onclick="undo()" disabled title="Deshacer último cambio">↩ Deshacer</button>
+            <button class="btn btn-outline btn-sm btn-redo-action" onclick="redo()" disabled title="Rehacer">↪ Rehacer</button>
+            <span class="undo-hint-text">Sin cambios recientes</span>
         </div>
 
         <div class="list-toolbar">
@@ -440,6 +509,42 @@
     </main>
 </div>
 
+<!-- Modal Ayuda Botones -->
+<div class="modal-overlay" id="ayudaModal">
+    <div class="modal">
+        <h3>ℹ️ Cómo funcionan los botones</h3>
+        <ul style="line-height:1.8; color:var(--text-light); list-style:none; padding:0;">
+            <li><button class="btn btn-success btn-sm" style="pointer-events:none;">✔ Pago único</button> : Registra el pago completo de una deuda de pago único.</li>
+            <li><button class="btn btn-info btn-sm" style="pointer-events:none;">💳 Gestionar</button> : Permite adelantar, liquidar o pagar la cuota mensual de compras a plazos.</li>
+            <li><button class="btn btn-purple btn-sm" style="pointer-events:none;">Pagar Servicio</button> : Registra el pago de un servicio y avanza la fecha al siguiente periodo.</li>
+            <li><button class="btn btn-success btn-sm" style="pointer-events:none;">🛒 Confirmar</button> : Confirma el gasto semanal de despensa/consumo y avanza al siguiente día del calendario.</li>
+            <li><button class="btn btn-warning btn-sm" style="pointer-events:none;">✏️</button> : Te permite editar cualquier registro.</li>
+            <li><button class="btn btn-danger btn-sm" style="pointer-events:none;">🗑</button> : Elimina el registro por completo de la base de datos.</li>
+        </ul>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="document.getElementById('ayudaModal').classList.remove('open')">Cerrar Ayuda</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Desglose Servicios -->
+<div class="modal-overlay" id="desgloseServiciosModal">
+    <div class="modal">
+        <h3>💡 Desglose de Servicios</h3>
+        <div class="table-responsive">
+            <table>
+                <thead><tr><th>Servicio</th><th>Próximo Corte</th><th>Costo</th></tr></thead>
+                <tbody id="desglose-servicios-list"></tbody>
+            </table>
+        </div>
+        <h4 style="text-align:right; margin-top:15px; color:var(--purple);" id="desglose-total"></h4>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="document.getElementById('desgloseServiciosModal').classList.remove('open')">Cerrar Desglose</button>
+        </div>
+    </div>
+</div>
+
+<!-- Resto de modales existentes -->
 <div class="modal-overlay" id="detallesModal">
     <div class="modal" style="max-width: 450px;">
         <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
@@ -530,11 +635,11 @@
 <div class="modal-overlay" id="confirmModal">
     <div class="modal" style="max-width:360px; text-align:center;">
         <div style="font-size:2rem; margin-bottom:10px;" id="confirm-icon">💳</div>
-        <h3 id="confirm-title" style="text-align:center; margin-bottom:10px;">Confirmar Pago</h3>
+        <h3 id="confirm-title" style="text-align:center; margin-bottom:10px;">Confirmar Acción</h3>
         <p id="confirm-msg" style="color:var(--text-light); font-size:0.93rem; margin-bottom:22px; line-height:1.5;"></p>
         <div class="modal-footer" style="justify-content:center;">
-            <button class="btn btn-success" id="confirm-yes" style="flex:1;">✔ CONFIRMAR PAGO</button>
-            <button class="btn" id="confirm-no" style="flex:1; background:var(--danger);">✖ NO CONFIRMAR</button>
+            <button class="btn btn-success" id="confirm-yes" style="flex:1;">✔ CONFIRMAR</button>
+            <button class="btn" id="confirm-no" style="flex:1; background:var(--danger);">✖ CANCELAR</button>
         </div>
     </div>
 </div>
@@ -551,7 +656,18 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ==========================================
+// UTILIDADES PARA EVITAR ERRORES DE ZONA HORARIA
+// ==========================================
+function getHoyStr(dateObj = new Date()) {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const d = String(dateObj.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
 let debts = [];
+let incomes = [];
 let activeFilters = [];
 let notifications = [];
 let history = [];
@@ -586,6 +702,8 @@ document.querySelectorAll('.modal-overlay').forEach(modal => {
             else if (this.id === 'confirmModal') cerrarConfirmModal();
             else if (this.id === 'successModal') cerrarSuccessModal();
             else if (this.id === 'detallesModal') cerrarDetallesModal();
+            else if (this.id === 'ayudaModal') this.classList.remove('open');
+            else if (this.id === 'desgloseServiciosModal') this.classList.remove('open');
         }
     });
 });
@@ -611,17 +729,44 @@ function init() {
             });
         } catch(e) { debts = []; }
     }
+    const savedIncomes = localStorage.getItem('incomes');
+    if (savedIncomes) {
+        try { incomes = JSON.parse(savedIncomes); } catch(e) { incomes = []; }
+    }
     const savedNotifs = localStorage.getItem('notifs');
     if (savedNotifs) {
         try { notifications = JSON.parse(savedNotifs); } catch(e) { notifications = []; }
     }
     const today = new Date();
     document.getElementById('monthSelector').value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    document.getElementById('inc-fecha').value = getHoyStr();
+
+    normalizarDeudas(); 
     pushHistory('Inicio');
     toggleTipoFormulario();
     renderCategoryFilters();
     checkNotifications();
     updateUI();
+}
+
+function normalizarDeudas() {
+    let changed = false;
+    debts.forEach(d => {
+        if (d.tipo === 'semanal' && !d.fechaLimite && d.dias && d.dias.length > 0) {
+            d.fechaLimite = getNextWeeklyDate(d.dias);
+            changed = true;
+        }
+    });
+    incomes.forEach(inc => {
+        if (inc.monto !== undefined && inc.amount === undefined) {
+            inc.amount = inc.monto;
+            changed = true;
+        }
+    });
+    if(changed) {
+        persistDebts();
+        persistIncomes();
+    }
 }
 
 function toggleNotif(e) {
@@ -727,7 +872,7 @@ function marcarTodasLeidas() {
 
 function pushHistory(label) {
     history = history.slice(0, historyIndex + 1);
-    history.push({ debts: JSON.stringify(debts), label });
+    history.push({ debts: JSON.stringify(debts), incomes: JSON.stringify(incomes), label });
     if (history.length > MAX_HISTORY) history.shift();
     historyIndex = history.length - 1;
     updateUndoRedoButtons();
@@ -737,7 +882,9 @@ function undo() {
     if (historyIndex <= 0) return;
     historyIndex--;
     debts = JSON.parse(history[historyIndex].debts);
+    incomes = history[historyIndex].incomes ? JSON.parse(history[historyIndex].incomes) : [];
     persistDebts();
+    persistIncomes();
     renderCategoryFilters();
     updateUI();
     updateUndoRedoButtons();
@@ -747,24 +894,29 @@ function redo() {
     if (historyIndex >= history.length - 1) return;
     historyIndex++;
     debts = JSON.parse(history[historyIndex].debts);
+    incomes = history[historyIndex].incomes ? JSON.parse(history[historyIndex].incomes) : [];
     persistDebts();
+    persistIncomes();
     renderCategoryFilters();
     updateUI();
     updateUndoRedoButtons();
 }
 
 function updateUndoRedoButtons() {
-    const btnUndo = document.getElementById('btn-undo');
-    const btnRedo = document.getElementById('btn-redo');
-    const hint = document.getElementById('undo-hint');
-    btnUndo.disabled = historyIndex <= 0;
-    btnRedo.disabled = historyIndex >= history.length - 1;
-    hint.textContent = history.length > 1 ? `Estado: "${history[historyIndex]?.label || ''}"` : 'Sin cambios recientes';
+    document.querySelectorAll('.btn-undo-action').forEach(btn => btn.disabled = historyIndex <= 0);
+    document.querySelectorAll('.btn-redo-action').forEach(btn => btn.disabled = historyIndex >= history.length - 1);
+    document.querySelectorAll('.undo-hint-text').forEach(hint => {
+        hint.textContent = history.length > 1 ? `Estado: "${history[historyIndex]?.label || ''}"` : 'Sin cambios recientes';
+    });
 }
 
 function persistDebts() {
     localStorage.setItem('debts', JSON.stringify(debts));
     checkNotifications();
+}
+
+function persistIncomes() {
+    localStorage.setItem('incomes', JSON.stringify(incomes));
 }
 
 const formatMoney = (amount) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount || 0);
@@ -803,7 +955,7 @@ function getNextWeeklyDate(selectedDays, fromDate = new Date()) {
     let current = new Date(fromDate);
     current.setHours(0, 0, 0, 0);
     for (let i = 0; i < 8; i++) {
-        if (selectedDays.includes(current.getDay())) return current.toISOString().split('T')[0];
+        if (selectedDays.includes(current.getDay())) return getHoyStr(current);
         current.setDate(current.getDate() + 1);
     }
     return null;
@@ -859,7 +1011,7 @@ function guardarRegistro() {
     const notes = document.getElementById('notas').value.trim();
     if (!nombre || !categoria || isNaN(monto)) return showToast('⚠ Revisa los campos', 'error');
     
-    let nueva = { id: Date.now().toString(), nombre, categoria, monto, tipo, notas: notes, fechaCreacion: new Date().toISOString().split('T')[0] };
+    let nueva = { id: Date.now().toString(), nombre, categoria, monto, tipo, notas: notes, fechaCreacion: getHoyStr() };
     if (tipo === 'semanal') {
         nueva.dias = Array.from(document.querySelectorAll('.dia-cb:checked')).map(cb => parseInt(cb.value));
         if (nueva.dias.length === 0) return showToast('⚠ Selecciona días', 'error');
@@ -894,6 +1046,116 @@ function resetFormulario() {
 
 function cancelarFormulario() { resetFormulario(); showSection('dashboard'); }
 
+/* Funciones de Ingresos */
+function guardarIngreso() {
+    const monto = parseFloat(document.getElementById('inc-monto').value);
+    const fecha = document.getElementById('inc-fecha').value;
+    const origen = document.getElementById('inc-origen').value.trim();
+
+    if (isNaN(monto) || monto <= 0) return showToast('⚠ Ingresa un monto válido', 'error');
+    if (!fecha) return showToast('⚠ Selecciona la fecha', 'error');
+    if (!origen) return showToast('⚠ Ingresa el origen', 'error');
+
+    const nuevo = { id: Date.now().toString(), amount: monto, date: fecha, source: origen, forceCurrentMonth: false };
+    incomes.push(nuevo);
+    
+    pushHistory(`Ingreso: ${formatMoney(monto)}`);
+    persistIncomes();
+    updateUI();
+    
+    document.getElementById('inc-monto').value = '';
+    document.getElementById('inc-origen').value = '';
+    showToast('✔ Ingreso guardado', 'success');
+}
+
+function forzarMesActual(id) {
+    showConfirm('➕', 'Sumar al Mes Actual', '¿Deseas que este ingreso cuente para saldar la deuda del mes actual (sin importar la fecha original de ingreso)?', () => {
+        const inc = incomes.find(i => i.id === id);
+        if (inc) {
+            inc.forceCurrentMonth = true;
+            pushHistory('Forzar ingreso al mes');
+            persistIncomes();
+            updateUI();
+            showToast('✔ Ingreso forzado al mes actual', 'success');
+        }
+    });
+}
+
+function quitarFuerzaMes(id) {
+    const inc = incomes.find(i => i.id === id);
+    if (inc) {
+        inc.forceCurrentMonth = false;
+        pushHistory('Desvincular ingreso del mes');
+        persistIncomes();
+        updateUI();
+    }
+}
+
+function eliminarIngreso(id) {
+    showConfirm('🗑', 'Eliminar Ingreso', '¿Eliminar este ingreso permanentemente?', () => {
+        incomes = incomes.filter(x => x.id !== id);
+        pushHistory('Eliminar Ingreso');
+        persistIncomes();
+        updateUI();
+    });
+}
+
+function renderIncomes() {
+    const list = document.getElementById('income-list');
+    list.innerHTML = '';
+    
+    const sortedIncomes = [...incomes].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    
+    if (sortedIncomes.length === 0) {
+        list.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-light);">Aún no has registrado ingresos.</td></tr>`;
+        return;
+    }
+
+    sortedIncomes.forEach(inc => {
+        let forzarBtn = inc.forceCurrentMonth 
+            ? `<button class="btn btn-outline btn-sm" style="border-color:var(--success); color:var(--success); padding:4px 8px;" onclick="quitarFuerzaMes('${inc.id}')" title="Vinculado al mes actual. Clic para desvincular">✔</button>` 
+            : `<button class="btn btn-success btn-sm" style="padding:4px 8px;" onclick="forzarMesActual('${inc.id}')" title="Agregar a la deuda del mes actual">➕</button>`;
+
+        list.innerHTML += `
+        <tr>
+            <td>${formatDateDMY(inc.date)}</td>
+            <td><strong>${inc.source}</strong></td>
+            <td class="text-success" style="font-weight:bold;">${formatMoney(inc.amount)}</td>
+            <td style="display:flex; gap:6px; align-items:center;">
+                ${forzarBtn}
+                <button class="btn btn-danger btn-sm" onclick="eliminarIngreso('${inc.id}')" title="Eliminar ingreso">🗑</button>
+            </td>
+        </tr>`;
+    });
+}
+
+// Modal Desglose Servicios
+function abrirDesgloseServicios() {
+    const list = document.getElementById('desglose-servicios-list');
+    list.innerHTML = '';
+    let total = 0;
+    
+    // Mostramos exactamente lo que suma para el Dashboard de Servicios (Deudas de servicio que no estén pagadas completamente)
+    debts.filter(d => d.tipo === 'servicio').forEach(d => {
+        const status = getStatus(d);
+        if (status.class !== 'pagado') {
+            total += d.monto;
+            list.innerHTML += `<tr>
+                <td><strong>${d.nombre}</strong></td>
+                <td>${formatDateDMY(d.fechaLimite)}</td>
+                <td>${formatMoney(d.monto)}</td>
+            </tr>`;
+        }
+    });
+    
+    if(total === 0) {
+        list.innerHTML = '<tr><td colspan="3" style="text-align:center;">No hay servicios pendientes en este momento.</td></tr>';
+    }
+    
+    document.getElementById('desglose-total').textContent = `Total General: ${formatMoney(total)}`;
+    document.getElementById('desgloseServiciosModal').classList.add('open');
+}
+
 function abrirDetalles(id) {
     const debt = debts.find(d => d.id === id);
     if (!debt) return;
@@ -911,6 +1173,10 @@ function abrirDetalles(id) {
         content += `<p><strong>Gasto Diario:</strong> ${formatMoney(debt.monto)}</p><p><strong>Siguiente Pago:</strong> ${formatDateDMY(debt.fechaLimite)}</p>`;
     }
 
+    if (debt.notas) {
+        content += `<div style="margin-top: 15px; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;"><strong style="color:var(--text);">Notas de usuario:</strong><br>${debt.notas}</div>`;
+    }
+
     let footer = `<div style="display:flex;gap:8px;flex-wrap:wrap;width:100%">${generateActionBtn(debt)}<button class="btn btn-warning" data-action="editar" data-id="${debt.id}">✏️ Editar</button><button class="btn btn-danger" data-action="eliminar" data-id="${debt.id}">🗑 Eliminar</button></div>`;
     document.getElementById('detalles-nombre').textContent = debt.nombre;
     document.getElementById('detalles-contenido').innerHTML = content;
@@ -919,11 +1185,11 @@ function abrirDetalles(id) {
 }
 
 function generateActionBtn(debt) {
-    const today = new Date().toISOString().split('T')[0];
-    const isPaidThisMonth = debt.ultimaFechaPago && debt.ultimaFechaPago.startsWith(today.slice(0,7));
-    if (debt.tipo === 'unica' && debt.pagado < debt.monto) return `<button class="btn btn-success" data-action="pagar" data-id="${debt.id}">✔ Pagar</button>`;
+    const todayStr = getHoyStr();
+    const isPaidThisMonth = debt.ultimaFechaPago && debt.ultimaFechaPago.startsWith(todayStr.slice(0,7));
+    if (debt.tipo === 'unica' && debt.pagado < debt.monto) return `<button class="btn btn-success" data-action="pagar" data-id="${debt.id}">✔ Pago único</button>`;
     if (debt.tipo === 'plazos' && debt.mesesPagados < debt.mesesTotal) return `<button class="btn btn-info" data-action="gestionar-plazo" data-id="${debt.id}">💳 Gestionar</button>`;
-    if (debt.tipo === 'servicio') return `<button class="btn btn-purple" ${isPaidThisMonth ? 'disabled' : ''} data-action="servicio" data-id="${debt.id}">${isPaidThisMonth ? 'Pagado' : 'Pagar'}</button>`;
+    if (debt.tipo === 'servicio') return `<button class="btn btn-purple" ${isPaidThisMonth ? 'disabled' : ''} data-action="servicio" data-id="${debt.id}">${isPaidThisMonth ? 'Pagado' : 'Pagar Servicio'}</button>`;
     if (debt.tipo === 'semanal') return `<button class="btn btn-success" data-action="compra" data-id="${debt.id}">🛒 Confirmar</button>`;
     return '';
 }
@@ -999,8 +1265,8 @@ function procesarPlazos() {
     debt.mesesPagados += cant;
     let next = new Date(debt.fechaLimite + 'T00:00:00');
     next.setMonth(next.getMonth() + cant);
-    debt.fechaLimite = next.toISOString().split('T')[0];
-    debt.ultimaFechaPago = new Date().toISOString().split('T')[0];
+    debt.fechaLimite = getHoyStr(next);
+    debt.ultimaFechaPago = getHoyStr();
     pushHistory(`Plazos: ${debt.nombre}`);
     persistDebts();
     updateUI();
@@ -1012,7 +1278,7 @@ function cerrarPlazosModal() { document.getElementById('plazosModal').classList.
 function marcarPagado(id) {
     const d = debts.find(x => x.id === id);
     showConfirm('💳', 'Pagar Deuda', `¿Pagar ${formatMoney(d.monto)}?`, () => {
-        d.pagado = d.monto; d.ultimaFechaPago = new Date().toISOString().split('T')[0];
+        d.pagado = d.monto; d.ultimaFechaPago = getHoyStr();
         pushHistory(`Pagar: ${d.nombre}`); persistDebts(); updateUI();
     });
 }
@@ -1022,16 +1288,16 @@ function avanzarMesServicio(id) {
     showConfirm('🔄', 'Pagar Servicio', `¿Pagar ${formatMoney(d.monto)}?`, () => {
         let next = new Date(d.fechaLimite + 'T00:00:00');
         next.setMonth(next.getMonth() + (d.frecuencia || 1));
-        d.fechaLimite = next.toISOString().split('T')[0];
-        d.ultimaFechaPago = new Date().toISOString().split('T')[0];
+        d.fechaLimite = getHoyStr(next);
+        d.ultimaFechaPago = getHoyStr();
         pushHistory(`Servicio: ${d.nombre}`); persistDebts(); updateUI();
     });
 }
 
 function registrarCompra(id) {
     const d = debts.find(x => x.id === id);
-    showConfirm('🛒', 'Confirmar Compra', `¿Registrar compra de ${d.nombre}?`, () => {
-        d.ultimaFechaPago = new Date().toISOString().split('T')[0];
+    showConfirm('🛒', 'Confirmar Compra', `¿Registrar pago de ${d.nombre}?`, () => {
+        d.ultimaFechaPago = getHoyStr();
         if (d.tipo === 'semanal') {
             let nextDate = new Date();
             nextDate.setDate(nextDate.getDate() + 1);
@@ -1042,25 +1308,32 @@ function registrarCompra(id) {
 }
 
 function eliminarDeuda(id) {
-    showConfirm('🗑', 'Eliminar', '¿Eliminar registro?', () => {
+    showConfirm('🗑', 'Eliminar', '¿Eliminar registro permanentemente?', () => {
         debts = debts.filter(x => x.id !== id); pushHistory('Eliminar'); persistDebts(); updateUI();
     });
 }
 
 function exportarJSON() {
-    if (debts.length === 0) {
-        showToast('⚠ No hay deudas para exportar', 'error');
+    if (debts.length === 0 && incomes.length === 0) {
+        showToast('⚠ No hay información para exportar', 'error');
         return;
     }
-    const defaultName = `deudas_${new Date().toISOString().split('T')[0]}`;
-    let fileName = prompt('Ingresa el nombre del archivo:', defaultName);
+    const defaultName = `datos_deudas_${getHoyStr()}`;
+    let fileName = prompt('Ingresa el nombre del archivo para guardar tu respaldo:', defaultName);
     
-    if (fileName === null) return; // Si el usuario cancela
+    if (fileName === null) return;
     
     fileName = fileName.trim() || defaultName;
     if (!fileName.endsWith('.json')) fileName += '.json';
 
-    const blob = new Blob([JSON.stringify(debts)], { type: 'application/json' });
+    const payload = {
+        version: 2,
+        exportDate: new Date().toISOString(),
+        debts: debts,
+        incomes: incomes
+    };
+
+    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1069,7 +1342,7 @@ function exportarJSON() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast('✔ Lista exportada exitosamente', 'success');
+    showToast('✔ Respaldo exportado exitosamente', 'success');
 }
 
 function importarJSON(e) {
@@ -1080,13 +1353,16 @@ function importarJSON(e) {
     reader.onload = (ev) => { 
         try {
             const parsed = JSON.parse(ev.target.result);
-            // Valida si es un array directo o si viene dentro de la propiedad "debts"
             debts = Array.isArray(parsed) ? parsed : (parsed.debts ? parsed.debts : []);
+            incomes = parsed.incomes || [];
             
-            if(debts.length > 0) {
+            normalizarDeudas(); 
+
+            if(debts.length > 0 || incomes.length > 0) {
                 persistDebts(); 
+                persistIncomes();
                 updateUI();
-                showToast(`✔ ${debts.length} registros importados`, 'success');
+                showToast(`✔ Registros importados correctamente`, 'success');
             } else {
                 showToast('⚠ El archivo no contiene datos válidos', 'error');
             }
@@ -1095,7 +1371,26 @@ function importarJSON(e) {
         }
     };
     reader.readAsText(file);
-    e.target.value = ''; // Permite volver a subir el mismo archivo si es necesario
+    e.target.value = ''; 
+}
+
+function generateFinancials(d) {
+    let text = '';
+    let resta = d.tipo === 'plazos' ? (d.monto - (d.monto/d.mesesTotal)*d.mesesPagados) : (d.monto - (d.pagado||0));
+    
+    if (d.tipo === 'unica') {
+        text = `Total: ${formatMoney(d.monto)}<br><strong>Falta: ${formatMoney(resta)}</strong><br><small style="color:var(--text-light);">Ahorro sugerido: ${formatMoney(resta/4)}/sem</small>`;
+    } else if (d.tipo === 'plazos') {
+        const cuota = d.monto/d.mesesTotal;
+        text = `Total: ${formatMoney(d.monto)}<br>Progreso: ${d.mesesPagados}/${d.mesesTotal} meses<br><strong style="color:var(--primary);">Cuota: ${formatMoney(cuota)}/mes</strong><br><strong style="color:var(--danger);">Resta: ${formatMoney(resta)}</strong><br><small style="color:var(--text-light);">Ahorro sugerido: ${formatMoney(cuota/4)}/sem</small>`;
+    } else if (d.tipo === 'servicio') {
+        const numSemanas = (parseInt(d.frecuencia) || 1) * 4;
+        text = `<strong>Costo: ${formatMoney(d.monto)}</strong><br><small style="color:var(--text-light);">Ahorro sugerido: ${formatMoney(d.monto/numSemanas)}/sem</small>`;
+    } else if (d.tipo === 'semanal') {
+        const costoSem = d.monto * (d.dias || []).length;
+        text = `Días: ${d.dias.map(x=>['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][x]).join(', ')}<br><strong style="color:var(--success);">Semana: ${formatMoney(costoSem)}</strong>`;
+    }
+    return text;
 }
 
 function updateUI() {
@@ -1106,7 +1401,15 @@ function updateUI() {
     const urgency = document.getElementById('urgency-list');
     list.innerHTML = urgency.innerHTML = '';
 
-    debts.forEach(d => {
+    document.getElementById('label-month-total').textContent = month ? 'Total Pendiente del Mes:' : 'Total de la Lista:';
+
+    const sortedDebts = [...debts].sort((a, b) => {
+        let da = a.fechaLimite || '9999-99-99';
+        let db = b.fechaLimite || '9999-99-99';
+        return da.localeCompare(db);
+    });
+
+    sortedDebts.forEach(d => {
         const status = getStatus(d);
         const matches = (d.nombre + d.categoria).toLowerCase().includes(search) && (activeFilters.length === 0 || activeFilters.includes(d.categoria));
         if (!matches) return;
@@ -1118,27 +1421,71 @@ function updateUI() {
             if (d.tipo === 'servicio') totals.serv += d.monto;
         }
 
-        if (month && d.fechaLimite?.startsWith(month)) totals.mes += (d.tipo === 'plazos' ? d.monto/d.mesesTotal : resta);
+        const matchesMonth = month ? d.fechaLimite?.startsWith(month) : true;
+        if (matchesMonth) {
+            totals.mes += (d.tipo === 'plazos' ? d.monto/d.mesesTotal : resta);
+        }
 
-        const row = `<tr><td><strong class="concepto-link" data-action="ver-detalles" data-id="${d.id}">${d.nombre}</strong></td><td>${d.categoria}</td><td>${d.tipo.toUpperCase()}</td><td>${generateFinancials(d)}</td><td>${formatDateDMY(d.fechaLimite)}</td><td><span class="badge ${status.class}">${status.label}</span></td><td><div class="actions">${generateActionBtn(d)}<button class="btn btn-warning btn-sm" data-action="editar" data-id="${d.id}">✏️</button><button class="btn btn-danger btn-sm" data-action="eliminar" data-id="${d.id}">🗑</button></div></td></tr>`;
+        // Color para el badge de TIPO
+        let typeColor = '';
+        if(d.tipo === 'unica') typeColor = '#3b82f6'; // Azul primary
+        else if(d.tipo === 'plazos') typeColor = '#f59e0b'; // Naranja warning
+        else if(d.tipo === 'servicio') typeColor = '#8b5cf6'; // Morado purple
+        else if(d.tipo === 'semanal') typeColor = '#10b981'; // Verde success
+        
+        const badgeTipo = `<span class="badge" style="background-color:${typeColor}; color:white; font-size:0.7rem;">${d.tipo.toUpperCase()}</span>`;
+        const notasHtml = d.notas ? `<br><small style="color:var(--text-light); font-style:italic;">Notas: ${d.notas}</small>` : '';
+
+        const row = `<tr>
+            <td><strong class="concepto-link" data-action="ver-detalles" data-id="${d.id}">${d.nombre}</strong>${notasHtml}</td>
+            <td>${d.categoria}</td>
+            <td>${badgeTipo}</td>
+            <td>${generateFinancials(d)}</td>
+            <td>${formatDateDMY(d.fechaLimite)}</td>
+            <td><span class="badge ${status.class}">${status.label}</span></td>
+            <td><div class="actions">${generateActionBtn(d)}<button class="btn btn-warning btn-sm" data-action="editar" data-id="${d.id}">✏️</button><button class="btn btn-danger btn-sm" data-action="eliminar" data-id="${d.id}">🗑</button></div></td>
+        </tr>`;
+        
         list.innerHTML += row;
-        if (status.class !== 'pagado' && d.fechaLimite) {
-            urgency.innerHTML += `<tr><td><strong class="concepto-link" data-action="ver-detalles" data-id="${d.id}">${d.nombre}</strong></td><td>${d.tipo}</td><td>${formatMoney(d.tipo==='plazos'?d.monto/d.mesesTotal:resta)}</td><td>${formatDateDMY(d.fechaLimite)}</td><td><span class="badge ${status.class}">${status.label}</span></td></tr>`;
+        
+        if (status.class !== 'pagado' && d.fechaLimite && matchesMonth) {
+            urgency.innerHTML += `<tr><td><strong class="concepto-link" data-action="ver-detalles" data-id="${d.id}">${d.nombre}</strong></td><td>${badgeTipo}</td><td>${formatMoney(d.tipo==='plazos'?d.monto/d.mesesTotal:resta)}</td><td>${formatDateDMY(d.fechaLimite)}</td><td><span class="badge ${status.class}">${status.label}</span></td></tr>`;
         }
     });
+
+    let tIngresosMes = 0;
+    incomes.forEach(inc => {
+        const incMatches = month ? inc.date?.startsWith(month) : true;
+        if (incMatches || inc.forceCurrentMonth) tIngresosMes += (parseFloat(inc.amount) || parseFloat(inc.monto) || 0); 
+    });
+
+    let faltaSaldar = totals.mes - tIngresosMes;
 
     document.getElementById('dash-total').textContent = formatMoney(totals.pend);
     document.getElementById('dash-vencido').textContent = formatMoney(totals.venc);
     document.getElementById('dash-servicios').textContent = formatMoney(totals.serv);
     document.getElementById('dash-month-total').textContent = formatMoney(totals.mes);
-}
+    
+    document.getElementById('dash-ingresos').textContent = formatMoney(tIngresosMes);
+    document.getElementById('income-month-total').textContent = formatMoney(tIngresosMes);
 
-function generateFinancials(d) {
-    if (d.tipo === 'unica') return `Resta: ${formatMoney(d.monto - (d.pagado||0))}`;
-    if (d.tipo === 'plazos') return `${d.mesesPagados}/${d.mesesTotal} meses<br>Cuota: ${formatMoney(d.monto/d.mesesTotal)}`;
-    if (d.tipo === 'servicio') return `Costo: ${formatMoney(d.monto)}`;
-    if (d.tipo === 'semanal') return `Días: ${d.dias.map(x=>['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][x]).join(', ')}<br>Semana: ${formatMoney(d.monto * d.dias.length)}`;
-    return '';
+    const formatRestante = (falta) => {
+        if(falta > 0) return { text: formatMoney(falta), class: 'text-danger' };
+        if(falta < 0) return { text: formatMoney(Math.abs(falta)) + ' (Sobrante)', class: 'text-success' };
+        return { text: '$0.00', class: 'text-success' };
+    };
+
+    const objRestante = formatRestante(faltaSaldar);
+    
+    const dashRestanteEl = document.getElementById('dash-restante');
+    dashRestanteEl.textContent = objRestante.text;
+    dashRestanteEl.className = 'amount ' + objRestante.class;
+
+    const incRestanteEl = document.getElementById('income-month-restante');
+    incRestanteEl.textContent = objRestante.text;
+    incRestanteEl.className = 'amount ' + objRestante.class;
+
+    renderIncomes();
 }
 
 init();
