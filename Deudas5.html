@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Control de Deudas y Gastos</title>
-    <!-- Librería necesaria para exportar el reporte como imagen -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
         :root {
             --primary: #2563eb;
@@ -165,6 +165,9 @@
         .notif-item:hover { background: var(--row-hover); }
         .notif-item.unread { background: #eff6ff; }
         body.dark .notif-item.unread { background: #1e293b; }
+        .notif-item.paid { background: #d1fae5; border-left: 3px solid var(--success); }
+        body.dark .notif-item.paid { background: #052e16; border-left: 3px solid var(--success); }
+        
         .notif-title { font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; color: var(--text); padding-right: 25px; }
         .notif-msg { font-size: 0.85rem; color: var(--text-light); line-height: 1.4; }
         .notif-date { font-size: 0.7rem; color: var(--text-light); align-self: flex-end; margin-top: 4px; font-weight: 600;}
@@ -211,6 +214,146 @@
         .toast.error { background: #7f1d1d; }
 
         .io-section { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+        /* ============ ANALYTICS MODULE STYLES ============ */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 18px;
+            margin-bottom: 20px;
+        }
+        .chart-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        .chart-card h4 {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .chart-card canvas { max-height: 240px; }
+        .chart-card.full-width { grid-column: 1 / -1; }
+        .chart-card canvas.tall { max-height: 300px; }
+
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .kpi-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            transition: transform 0.18s, box-shadow 0.18s;
+        }
+        .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
+        .kpi-card .kpi-icon { font-size: 1.5rem; }
+        .kpi-card .kpi-label { font-size: 0.75rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+        .kpi-card .kpi-value { font-size: 1.3rem; font-weight: 800; }
+        .kpi-card .kpi-sub { font-size: 0.75rem; color: var(--text-light); }
+
+        .projection-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+        .projection-table th { color: var(--text-light); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+        .projection-table td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .projection-table tr:last-child td { border-bottom: none; }
+        .projection-table tr:hover td { background: var(--row-hover); }
+
+        .debt-ranking-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .debt-ranking-item:last-child { border-bottom: none; }
+        .rank-num { font-size: 1.1rem; font-weight: 800; color: var(--text-light); min-width: 28px; }
+        .rank-info { flex: 1; }
+        .rank-info strong { font-size: 0.9rem; display: block; }
+        .rank-info small { color: var(--text-light); font-size: 0.78rem; }
+        .rank-bar-wrap { flex: 1; max-width: 100px; }
+        .rank-bar { height: 6px; border-radius: 99px; background: var(--primary); transition: width 0.5s; }
+        .rank-amount { font-weight: 800; font-size: 0.9rem; color: var(--danger); min-width: 80px; text-align: right; }
+
+        .flujo-positivo { color: var(--success) !important; }
+        .flujo-negativo { color: var(--danger) !important; }
+
+        .analytics-tabs {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 0;
+        }
+        .analytics-tab {
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 10px 16px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-light);
+            transition: 0.18s;
+            margin-bottom: -2px;
+            border-radius: 0;
+        }
+        .analytics-tab:hover { color: var(--primary); }
+        .analytics-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .analytics-panel { display: none; }
+        .analytics-panel.active { display: block; }
+
+        .freedom-date-box {
+            background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+            color: white;
+            border-radius: 14px;
+            padding: 22px 24px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 20px;
+        }
+        .freedom-date-box .fd-icon { font-size: 2.8rem; }
+        .freedom-date-box .fd-label { font-size: 0.8rem; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.05em; }
+        .freedom-date-box .fd-date { font-size: 1.6rem; font-weight: 900; }
+        .freedom-date-box .fd-sub { font-size: 0.82rem; opacity: 0.8; margin-top: 4px; }
+
+        .budget-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.88rem;
+        }
+        .budget-row:last-child { border-bottom: none; }
+        .budget-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+        .budget-name { flex: 1; font-weight: 600; }
+        .budget-pct { min-width: 40px; text-align: right; font-size: 0.78rem; color: var(--text-light); }
+        .budget-bar-track { flex: 2; background: var(--border); height: 8px; border-radius: 99px; overflow: hidden; }
+        .budget-bar-fill { height: 100%; border-radius: 99px; transition: width 0.5s; }
+        .budget-val { min-width: 80px; text-align: right; font-weight: 700; font-size: 0.85rem; }
+
+        @media (max-width: 600px) {
+            .analytics-grid { grid-template-columns: 1fr; }
+            .kpi-row { grid-template-columns: 1fr 1fr; }
+            .freedom-date-box { flex-direction: column; text-align: center; padding: 18px; }
+        }
+        /* ============ END ANALYTICS STYLES ============ */
 
         @media (max-width: 600px) {
             body { padding: 10px; }
@@ -262,19 +405,28 @@
         <button class="btn btn-outline" onclick="showSection('dashboard')">📊 Resumen</button>
         <button class="btn btn-outline" onclick="showSection('list')">📋 Lista Completa</button>
         <button class="btn btn-outline" onclick="showSection('income')" style="border-color: var(--success); color: var(--success);">💰 Ingresos</button>
+        <button class="btn btn-outline" onclick="showSection('analytics'); renderAnalytics();" style="border-color: #8b5cf6; color: #8b5cf6;">📈 Analíticas</button>
     </nav>
 
     <main id="dashboard-section" class="section active">
         <h2>Resumen Financiero</h2>
         <br>
+        
+        <div class="undo-bar" style="margin-bottom: 16px;">
+            <button class="btn btn-outline btn-sm btn-undo-action" onclick="undo()" disabled title="Deshacer último cambio">↩ Deshacer</button>
+            <button class="btn btn-outline btn-sm btn-redo-action" onclick="redo()" disabled title="Rehacer">↪ Rehacer</button>
+            <span class="undo-hint-text">Sin cambios recientes</span>
+        </div>
+
         <div class="dashboard">
             <div class="card">
                 <h3>Total Deuda Fija Pendiente</h3>
-                <div class="amount" id="dash-total">$0.00</div>
+                <div class="amount text-danger" id="dash-total">$0.00</div>
             </div>
-            <div class="card">
+            <div class="card" style="border-color: var(--danger); cursor:pointer;" onclick="abrirListaVencidas()" title="Ver deudas vencidas o atrasadas">
                 <h3>Vencido / Atrasado</h3>
                 <div class="amount text-danger" id="dash-vencido">$0.00</div>
+                <small style="color:var(--text-light); font-size:0.72rem; margin-top:4px;">Toca para ver desglose ▼</small>
             </div>
             <div class="card" style="border-color: var(--purple); cursor:pointer;" onclick="abrirDesgloseServicios(true)" title="Ver desglose por tipos">
                 <h3>Presupuesto Servicios</h3>
@@ -284,9 +436,9 @@
                 <div style="display:flex; flex-direction:column; gap:9px;">
                     <span id="label-month-total" style="font-size:0.82rem; color:var(--text-light); font-weight:600;">Total Pendiente del Periodo:</span>
                     <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
-                        <input type="month" id="monthSelectorFrom" class="form-control" style="width:auto; padding:4px 8px; font-size:0.82rem;" onchange="updateUI()">
+                        <input type="date" id="monthSelectorFrom" class="form-control" style="width:auto; padding:4px 8px; font-size:0.82rem;" onchange="updateUI()">
                         <span style="font-size:0.8rem; font-weight:bold;">a</span>
-                        <input type="month" id="monthSelectorTo" class="form-control" style="width:auto; padding:4px 8px; font-size:0.82rem;" onchange="updateUI()">
+                        <input type="date" id="monthSelectorTo" class="form-control" style="width:auto; padding:4px 8px; font-size:0.82rem;" onchange="updateUI()">
                     </div>
                     <button class="btn btn-outline" style="font-size:0.78rem; padding:5px; border-color:var(--primary); color:var(--primary);" onclick="clearMonthFilter()">Mostrar todas las deudas</button>
                     <div class="amount text-primary" id="dash-month-total">$0.00</div>
@@ -302,6 +454,15 @@
             </div>
         </div>
         
+        <div id="salud-financiera-card" style="margin-bottom:18px; padding:16px; border-radius:12px; border:2px solid var(--border); background:var(--surface); display:flex; gap:14px; align-items:center; flex-wrap:wrap;">
+            <div style="font-size:2.5rem;" id="salud-emoji">💚</div>
+            <div style="flex:1;">
+                <div style="font-weight:700; font-size:1rem;" id="salud-titulo">Salud Financiera</div>
+                <div style="font-size:0.85rem; color:var(--text-light);" id="salud-msg">Calculando...</div>
+            </div>
+            <div style="font-size:1.4rem; font-weight:bold;" id="salud-score"></div>
+        </div>
+
         <h3 style="margin-top:16px; margin-bottom:4px;">Próximos Pagos</h3>
         <div class="table-responsive">
             <table>
@@ -330,6 +491,8 @@
                 <button class="btn btn-purple" onclick="compartirReporteImagen()">🖼️ Enviar imagen</button>
                 <button class="btn btn-info" onclick="compartirReporteTabla()">📊 Compartir tabla</button>
             </div>
+            <button class="btn btn-outline" onclick="abrirHistorialPagos()" style="margin-top:8px;">📜 Ver historial de pagos</button>
+            <p id="last-saved-info" style="font-size:0.78rem; margin-top:6px; font-weight:600;"></p>
             <p style="font-size:0.78rem; color:var(--text-light); margin-top:8px;">Exporta tu respaldo, o comparte tu resumen del periodo por texto, imagen perfecta para WhatsApp o tabla para Excel/Sheets.</p>
         </div>
     </main>
@@ -521,7 +684,6 @@
     </main>
 </div>
 
-<!-- Modal Ayuda Botones -->
 <div class="modal-overlay" id="ayudaModal">
     <div class="modal">
         <h3>ℹ️ Cómo funcionan los botones</h3>
@@ -539,7 +701,6 @@
     </div>
 </div>
 
-<!-- Modal Desglose -->
 <div class="modal-overlay" id="desgloseServiciosModal">
     <div class="modal">
         <h3 style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
@@ -561,7 +722,6 @@
     </div>
 </div>
 
-<!-- Modal Detalles -->
 <div class="modal-overlay" id="detallesModal">
     <div class="modal" style="max-width: 450px;">
         <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
@@ -574,7 +734,6 @@
     </div>
 </div>
 
-<!-- Modal Editar -->
 <div class="modal-overlay" id="editModal">
     <div class="modal">
         <h3>✏️ Editar Registro</h3>
@@ -713,12 +872,169 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="todasDeudasModal">
+    <div class="modal" style="max-width:600px;">
+        <h3 style="color:var(--danger);">🔴 Deudas Vencidas / Atrasadas</h3>
+        <div id="todas-deudas-resumen" style="display:flex; gap:10px; flex-wrap:wrap; margin:12px 0; padding:10px; background:var(--bg); border-radius:8px; font-size:0.85rem;"></div>
+        <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Concepto</th>
+                        <th>Tipo</th>
+                        <th>Monto</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody id="todas-deudas-list"></tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="document.getElementById('todasDeudasModal').classList.remove('open')">Cerrar</button>
+            <button class="btn" onclick="document.getElementById('todasDeudasModal').classList.remove('open'); showSection('list')">Ver Lista Completa</button>
+        </div>
+    </div>
+</div>
+
+    <!-- ============ ANALYTICS SECTION ============ -->
+    <main id="analytics-section" class="section">
+        <h2>📈 Analíticas Financieras</h2>
+        <p style="color:var(--text-light); font-size:0.88rem; margin-top:4px; margin-bottom:20px;">Visualiza el estado completo de tus finanzas, proyecciones y tendencias.</p>
+
+        <!-- ANALYTICS TABS -->
+        <div class="analytics-tabs">
+            <button class="analytics-tab active" onclick="switchAnalyticsTab('general', this)">📊 General</button>
+            <button class="analytics-tab" onclick="switchAnalyticsTab('categorias', this)">🗂 Por Categoría</button>
+            <button class="analytics-tab" onclick="switchAnalyticsTab('proyeccion', this)">🔮 Proyección</button>
+            <button class="analytics-tab" onclick="switchAnalyticsTab('flujo', this)">💸 Flujo de Caja</button>
+            <button class="analytics-tab" onclick="switchAnalyticsTab('ranking', this)">🏆 Ranking Deudas</button>
+        </div>
+
+        <!-- TAB: GENERAL -->
+        <div id="analytics-panel-general" class="analytics-panel active">
+            <!-- KPIs -->
+            <div class="kpi-row" id="kpi-row-general"></div>
+            <!-- Charts row -->
+            <div class="analytics-grid">
+                <div class="chart-card">
+                    <h4>🍕 Distribución por Tipo</h4>
+                    <canvas id="chart-tipo"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h4>📊 Estado de Deudas</h4>
+                    <canvas id="chart-estado"></canvas>
+                </div>
+                <div class="chart-card full-width">
+                    <h4>📅 Pagos Registrados (últimos 6 meses)</h4>
+                    <canvas id="chart-pagos-hist" class="tall"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: CATEGORIAS -->
+        <div id="analytics-panel-categorias" class="analytics-panel">
+            <div class="analytics-grid">
+                <div class="chart-card">
+                    <h4>🗂 Monto por Categoría</h4>
+                    <canvas id="chart-cat-monto"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h4>🔢 Cantidad por Categoría</h4>
+                    <canvas id="chart-cat-count"></canvas>
+                </div>
+            </div>
+            <!-- Budget breakdown -->
+            <div class="chart-card full-width" style="margin-top:0;">
+                <h4>📐 Presupuesto por Categoría (% del total)</h4>
+                <div id="budget-breakdown-list"></div>
+            </div>
+        </div>
+
+        <!-- TAB: PROYECCION -->
+        <div id="analytics-panel-proyeccion" class="analytics-panel">
+            <!-- Freedom date -->
+            <div class="freedom-date-box" id="freedom-date-box">
+                <div class="fd-icon">🏁</div>
+                <div>
+                    <div class="fd-label">Fecha estimada de libertad financiera</div>
+                    <div class="fd-date" id="fd-date-text">Calculando...</div>
+                    <div class="fd-sub" id="fd-date-sub"></div>
+                </div>
+            </div>
+            <div class="analytics-grid">
+                <div class="chart-card full-width">
+                    <h4>📉 Proyección de Deuda Total (próximos 12 meses)</h4>
+                    <canvas id="chart-proyeccion" class="tall"></canvas>
+                </div>
+            </div>
+            <div class="chart-card" style="margin-top:0;">
+                <h4>📋 Desglose Mensual de Compromisos</h4>
+                <div style="overflow-x:auto;">
+                    <table class="projection-table" id="projection-detail-table">
+                        <thead>
+                            <tr>
+                                <th>Mes</th>
+                                <th>Pagos esperados</th>
+                                <th>Total comprometido</th>
+                                <th>Deuda restante (estimado)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projection-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: FLUJO -->
+        <div id="analytics-panel-flujo" class="analytics-panel">
+            <div class="analytics-grid">
+                <div class="chart-card full-width">
+                    <h4>💸 Flujo Ingresos vs Gastos (por mes registrado)</h4>
+                    <canvas id="chart-flujo" class="tall"></canvas>
+                </div>
+            </div>
+            <div class="chart-card" style="margin-top:0;">
+                <h4>📋 Resumen de Flujo por Mes</h4>
+                <div style="overflow-x:auto;">
+                    <table class="projection-table" id="flujo-table">
+                        <thead>
+                            <tr>
+                                <th>Mes</th>
+                                <th>Ingresos</th>
+                                <th>Gastos/Pagos</th>
+                                <th>Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="flujo-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: RANKING -->
+        <div id="analytics-panel-ranking" class="analytics-panel">
+            <div class="analytics-grid">
+                <div class="chart-card">
+                    <h4>🏆 Top Deudas por Monto Pendiente</h4>
+                    <div id="ranking-lista"></div>
+                </div>
+                <div class="chart-card">
+                    <h4>⚡ Índice de Urgencia</h4>
+                    <canvas id="chart-urgencia"></canvas>
+                </div>
+            </div>
+            <div class="chart-card" style="margin-top:0;">
+                <h4>🎯 Estrategia Recomendada de Pago</h4>
+                <div id="estrategia-pago"></div>
+            </div>
+        </div>
+    </main>
+    <!-- ============ END ANALYTICS SECTION ============ -->
+
 <div class="toast" id="toast"></div>
 
 <script>
-// ==========================================
-// UTILIDADES PARA EVITAR ERRORES DE ZONA HORARIA
-// ==========================================
 function getHoyStr(dateObj = new Date()) {
     const y = dateObj.getFullYear();
     const m = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -732,6 +1048,7 @@ let activeFilters = [];
 let activeTipoFilters = [];
 let notifications = [];
 let history = [];
+let paymentHistory = [];
 let historyIndex = -1;
 const MAX_HISTORY = 50;
 
@@ -769,6 +1086,7 @@ document.querySelectorAll('.modal-overlay').forEach(modal => {
             else if (this.id === 'detallesModal') cerrarDetallesModal();
             else if (this.id === 'ayudaModal') this.classList.remove('open');
             else if (this.id === 'desgloseServiciosModal') this.classList.remove('open');
+            else if (this.id === 'todasDeudasModal') this.classList.remove('open');
         }
     });
 });
@@ -803,11 +1121,15 @@ function init() {
     if (savedNotifs) {
         try { notifications = JSON.parse(savedNotifs); } catch(e) { notifications = []; }
     }
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const savedPayHist = localStorage.getItem('paymentHistory');
+    if (savedPayHist) {
+        try { paymentHistory = JSON.parse(savedPayHist); } catch(e) { paymentHistory = []; }
+    }
+    
+    const todayStr = getHoyStr();
     document.getElementById('monthSelectorFrom').value = todayStr;
     document.getElementById('monthSelectorTo').value = todayStr;
-    document.getElementById('inc-fecha').value = getHoyStr();
+    document.getElementById('inc-fecha').value = todayStr;
 
     normalizarDeudas(); 
     pushHistory('Inicio');
@@ -816,6 +1138,7 @@ function init() {
     renderTipoFilters();
     checkNotifications();
     updateUI();
+    renderLastSavedInfo();
 }
 
 function normalizarDeudas() {
@@ -880,6 +1203,18 @@ function checkNotifications() {
     else renderNotificaciones();
 }
 
+function marcarNotifPagada(debtId) {
+    let changed = false;
+    notifications.forEach(n => {
+        if (n.debtId === debtId) {
+            n.paid = true;
+            n.read = true;
+            changed = true;
+        }
+    });
+    if (changed) persistNotifs();
+}
+
 function renderNotificaciones() {
     const list = document.getElementById('notif-list');
     const badge = document.getElementById('notif-badge');
@@ -890,27 +1225,46 @@ function renderNotificaciones() {
     badge.textContent = unread.length > 9 ? '+9' : unread.length;
 
     if (notifications.length === 0) {
-        list.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-light); font-size:0.9rem;">No hay notificaciones.</div>`;
+        list.innerHTML = `<div style="padding:30px; text-align:center; color:var(--text-light);">
+            <div style="font-size:2rem;">🔔</div>
+            <div style="font-size:0.9rem; margin-top:8px;">No hay notificaciones.</div>
+        </div>`;
         return;
     }
 
     if (unread.length > 0) {
-        list.innerHTML += `<div class="notif-section-title">Pendientes</div>`;
+        list.innerHTML += `<div class="notif-section-title" style="color:var(--danger); border-left:3px solid var(--danger); padding-left:11px;">
+            🔴 Sin leer (${unread.length})
+        </div>`;
         unread.forEach(n => list.innerHTML += generateNotifHTML(n));
     }
+
     if (read.length > 0) {
-        list.innerHTML += `<div class="notif-section-title">Leídos</div>`;
+        list.innerHTML += `<div class="notif-section-title" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>✅ Leídos (${read.length})</span>
+            <button onclick="limpiarNotifLeidas()" style="background:transparent; border:none; cursor:pointer; color:var(--danger); font-size:0.75rem; font-weight:600;">Borrar leídos</button>
+        </div>`;
         read.forEach(n => list.innerHTML += generateNotifHTML(n));
     }
 }
 
 function generateNotifHTML(n) {
-    const icon = n.type === 'vencido' ? '⚠️' : '🗓️';
-    const color = n.type === 'vencido' ? 'var(--danger)' : 'var(--warning)';
+    let icon, color;
+    if (n.paid) {
+        icon = '✅'; color = 'var(--success)';
+    } else if (n.type === 'vencido') {
+        icon = '⚠️'; color = 'var(--danger)';
+    } else {
+        icon = '🗓️'; color = 'var(--warning)';
+    }
+
+    const clases = `notif-item ${n.paid ? 'paid' : (n.read ? '' : 'unread')}`;
+    const labelPagado = n.paid ? `<span style="font-size:0.72rem; color:var(--success); font-weight:700; background:#d1fae5; padding:1px 7px; border-radius:10px; margin-left:6px;">PAGADO</span>` : '';
+
     return `
-        <div class="notif-item ${n.read ? '' : 'unread'}" onclick="clickNotificacion('${n.id}', '${n.debtId}')">
+        <div class="${clases}" onclick="clickNotificacion('${n.id}', '${n.debtId}')">
             <button class="notif-delete" onclick="eliminarNotificacion(event, '${n.id}')">×</button>
-            <div class="notif-title"><span>${icon}</span> <span style="color:${color};">${n.title}</span></div>
+            <div class="notif-title"><span>${icon}</span> <span style="color:${color};">${n.title}</span>${labelPagado}</div>
             <div class="notif-msg">${n.msg}</div>
             <div class="notif-date">${n.date}</div>
         </div>`;
@@ -918,19 +1272,28 @@ function generateNotifHTML(n) {
 
 function clickNotificacion(notifId, debtId) {
     const notif = notifications.find(n => n.id === notifId);
-    if (notif) {
+    if (notif && !notif.read) {
         notif.read = true;
         persistNotifs();
+        showToast('✔ Notificación marcada como leída', 'success');
     }
     document.getElementById('notifDropdownWrapper').classList.remove('open');
-    showSection('list');
-    if (debts.some(d => d.id === debtId)) abrirDetalles(debtId);
+    if (debtId && debts.some(d => d.id === debtId)) {
+        showSection('list');
+        setTimeout(() => abrirDetalles(debtId), 100);
+    }
 }
 
 function eliminarNotificacion(e, id) {
     e.stopPropagation();
     notifications = notifications.filter(n => n.id !== id);
     persistNotifs();
+}
+
+function limpiarNotifLeidas() {
+    notifications = notifications.filter(n => !n.read);
+    persistNotifs();
+    showToast('🗑 Notificaciones leídas eliminadas', '');
 }
 
 function marcarTodasLeidas() {
@@ -983,11 +1346,26 @@ function updateUndoRedoButtons() {
 
 function persistDebts() {
     localStorage.setItem('debts', JSON.stringify(debts));
+    localStorage.setItem('lastSaved', new Date().toISOString());
     checkNotifications();
+    renderLastSavedInfo();
 }
 
 function persistIncomes() {
     localStorage.setItem('incomes', JSON.stringify(incomes));
+    localStorage.setItem('lastSaved', new Date().toISOString());
+    renderLastSavedInfo();
+}
+
+function renderLastSavedInfo() {
+    const el = document.getElementById('last-saved-info');
+    if (!el) return;
+    const ts = localStorage.getItem('lastSaved');
+    if (ts) {
+        const d = new Date(ts);
+        el.textContent = `💾 Guardado automáticamente: ${d.toLocaleString('es-MX')}`;
+        el.style.color = 'var(--success)';
+    }
 }
 
 const formatMoney = (amount) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount || 0);
@@ -1165,7 +1543,6 @@ function resetFormulario() {
 
 function cancelarFormulario() { resetFormulario(); showSection('dashboard'); }
 
-/* Funciones de Ingresos */
 function guardarIngreso() {
     const monto = parseFloat(document.getElementById('inc-monto').value);
     const fecha = document.getElementById('inc-fecha').value;
@@ -1257,7 +1634,60 @@ function renderIncomes() {
     });
 }
 
-// Modal Desglose Servicios
+function abrirListaVencidas() {
+    const list = document.getElementById('todas-deudas-list');
+    const resumen = document.getElementById('todas-deudas-resumen');
+    list.innerHTML = '';
+
+    const tiposColor = {
+        unica: '#3b82f6', plazos: '#f59e0b',
+        servicio: '#8b5cf6', deuda_recurr: '#ec4899', semanal: '#10b981'
+    };
+    const tiposLabel = {
+        unica: 'ÚNICA', plazos: 'PLAZOS',
+        servicio: 'SERVICIO', deuda_recurr: 'DEUDA', semanal: 'SEMANAL'
+    };
+
+    const vencidas = [...debts]
+        .filter(d => getStatus(d).class === 'vencido')
+        .sort((a, b) => (a.fechaLimite || '').localeCompare(b.fechaLimite || ''));
+
+    let totalVencido = 0;
+
+    vencidas.forEach(d => {
+        const resta = d.tipo === 'plazos'
+            ? (d.monto - (d.monto / d.mesesTotal) * d.mesesPagados)
+            : (d.monto - (d.pagado || 0));
+        totalVencido += resta;
+
+        const color = tiposColor[d.tipo] || '#64748b';
+        const label = tiposLabel[d.tipo] || d.tipo.toUpperCase();
+
+        list.innerHTML += `<tr style="cursor:pointer; border-left:3px solid var(--danger);"
+            onclick="document.getElementById('todasDeudasModal').classList.remove('open'); abrirDetalles('${d.id}')">
+            <td><strong>${d.nombre}</strong><br><small style="color:var(--text-light);">${d.categoria}</small></td>
+            <td><span class="badge" style="background:${color};color:white;font-size:0.7rem;">${label}</span></td>
+            <td style="font-weight:bold; color:var(--danger);">${formatMoney(resta)}</td>
+            <td><span class="badge vencido">Vencido</span></td>
+            <td style="font-size:0.82rem;">${formatDateDMY(d.fechaLimite)}</td>
+        </tr>`;
+    });
+
+    if (vencidas.length === 0) {
+        list.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--success); padding:20px;">
+            🎉 ¡No tienes deudas vencidas!
+        </td></tr>`;
+    }
+
+    resumen.innerHTML = vencidas.length > 0
+        ? `<span style="color:var(--danger); font-weight:700;">⚠ ${vencidas.length} deuda(s) vencida(s)</span>
+           <span style="margin-left:auto; font-weight:700; color:var(--danger);">Total atrasado: ${formatMoney(totalVencido)}</span>`
+        : '';
+
+    document.querySelector('#todasDeudasModal h3').textContent = '🔴 Deudas Vencidas / Atrasadas';
+    document.getElementById('todasDeudasModal').classList.add('open');
+}
+
 let tiposDesglose = [
     {val: 'unica', label: 'Compra Única'},
     {val: 'plazos', label: 'A Plazos (MSI)'},
@@ -1275,7 +1705,6 @@ function cambiarDesglose(dir) {
 }
 
 function abrirDesgloseServicios(reset = false) {
-    // Si se invoca desde la tarjeta principal, abre directamente la pestaña 'servicio'
     if(reset) idxDesglose = tiposDesglose.findIndex(t => t.val === 'servicio');
     if(idxDesglose === -1) idxDesglose = 0;
     
@@ -1440,6 +1869,7 @@ function guardarEdicion() {
 }
 
 function showConfirm(icon, title, msg, onYes) {
+    cerrarDetallesModal();
     document.getElementById('confirm-icon').textContent = icon;
     document.getElementById('confirm-title').textContent = title;
     document.getElementById('confirm-msg').textContent = msg;
@@ -1451,13 +1881,19 @@ function showConfirm(icon, title, msg, onYes) {
     btnYes.style.background = 'var(--success)';
     btnNo.style.background = 'var(--danger)';
     
-    btnYes.onclick = () => { onYes(); cerrarConfirmModal(); };
+    btnYes.onclick = () => {
+        onYes();
+        cerrarConfirmModal();
+        cerrarDetallesModal();
+        cerrarPlazosModal();
+    };
     btnNo.onclick = () => cerrarConfirmModal();
     
     document.getElementById('confirmModal').classList.add('open');
 }
 
 function showChoice(icon, title, msg, btn1Txt, onBtn1, btn2Txt, onBtn2) {
+    cerrarDetallesModal();
     document.getElementById('confirm-icon').textContent = icon;
     document.getElementById('confirm-title').textContent = title;
     document.getElementById('confirm-msg').textContent = msg;
@@ -1469,8 +1905,8 @@ function showChoice(icon, title, msg, btn1Txt, onBtn1, btn2Txt, onBtn2) {
     btnYes.style.background = 'var(--primary)';
     btnNo.style.background = 'var(--purple)';
     
-    btnYes.onclick = () => { onBtn1(); cerrarConfirmModal(); };
-    btnNo.onclick = () => { onBtn2(); cerrarConfirmModal(); };
+    btnYes.onclick = () => { onBtn1(); cerrarConfirmModal(); cerrarDetallesModal(); };
+    btnNo.onclick = () => { onBtn2(); cerrarConfirmModal(); cerrarDetallesModal(); };
     
     document.getElementById('confirmModal').classList.add('open');
 }
@@ -1504,7 +1940,13 @@ function procesarPlazos() {
     next.setMonth(next.getMonth() + cant);
     debt.fechaLimite = getHoyStr(next);
     debt.ultimaFechaPago = getHoyStr();
+    marcarNotifPagada(debt.id);
     pushHistory(`Plazos: ${debt.nombre}`);
+    
+    paymentHistory.unshift({ id: Date.now().toString(), debtId: debt.id, nombre: debt.nombre, monto: debt.monto / debt.mesesTotal * cant, fecha: getHoyStr(), tipo: debt.tipo });
+    if (paymentHistory.length > 100) paymentHistory = paymentHistory.slice(0, 100);
+    localStorage.setItem('paymentHistory', JSON.stringify(paymentHistory));
+
     persistDebts();
     updateUI();
     document.getElementById('plazosModal').classList.remove('open');
@@ -1516,7 +1958,14 @@ function marcarPagado(id) {
     const d = debts.find(x => x.id === id);
     showConfirm('💳', 'Pagar Deuda', `¿Pagar ${formatMoney(d.monto)}?`, () => {
         d.pagado = d.monto; d.ultimaFechaPago = getHoyStr();
-        pushHistory(`Pagar: ${d.nombre}`); persistDebts(); updateUI();
+        marcarNotifPagada(id);
+        pushHistory(`Pagar: ${d.nombre}`);
+        
+        paymentHistory.unshift({ id: Date.now().toString(), debtId: d.id, nombre: d.nombre, monto: d.tipo === 'plazos' ? d.monto / d.mesesTotal : d.monto, fecha: getHoyStr(), tipo: d.tipo });
+        if (paymentHistory.length > 100) paymentHistory = paymentHistory.slice(0, 100);
+        localStorage.setItem('paymentHistory', JSON.stringify(paymentHistory));
+
+        persistDebts(); updateUI();
     });
 }
 
@@ -1527,7 +1976,14 @@ function avanzarMesServicio(id) {
         next.setMonth(next.getMonth() + (d.frecuencia || 1));
         d.fechaLimite = getHoyStr(next);
         d.ultimaFechaPago = getHoyStr();
-        pushHistory(`Servicio/Recurrente: ${d.nombre}`); persistDebts(); updateUI();
+        marcarNotifPagada(id);
+        pushHistory(`Servicio/Recurrente: ${d.nombre}`);
+        
+        paymentHistory.unshift({ id: Date.now().toString(), debtId: d.id, nombre: d.nombre, monto: d.monto, fecha: getHoyStr(), tipo: d.tipo });
+        if (paymentHistory.length > 100) paymentHistory = paymentHistory.slice(0, 100);
+        localStorage.setItem('paymentHistory', JSON.stringify(paymentHistory));
+
+        persistDebts(); updateUI();
     });
 }
 
@@ -1540,7 +1996,14 @@ function registrarCompra(id) {
             nextDate.setDate(nextDate.getDate() + 1);
             d.fechaLimite = getNextWeeklyDate(d.dias, nextDate);
         }
-        pushHistory(`Compra: ${d.nombre}`); persistDebts(); updateUI();
+        marcarNotifPagada(id);
+        pushHistory(`Compra: ${d.nombre}`);
+        
+        paymentHistory.unshift({ id: Date.now().toString(), debtId: d.id, nombre: d.nombre, monto: d.monto, fecha: getHoyStr(), tipo: d.tipo });
+        if (paymentHistory.length > 100) paymentHistory = paymentHistory.slice(0, 100);
+        localStorage.setItem('paymentHistory', JSON.stringify(paymentHistory));
+
+        persistDebts(); updateUI();
     });
 }
 
@@ -1548,6 +2011,29 @@ function eliminarDeuda(id) {
     showConfirm('🗑', 'Eliminar', '¿Eliminar registro permanentemente?', () => {
         debts = debts.filter(x => x.id !== id); pushHistory('Eliminar'); persistDebts(); updateUI();
     });
+}
+
+function abrirHistorialPagos() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay open';
+    modal.innerHTML = `<div class="modal" style="max-width:520px;">
+        <h3>📜 Historial de Pagos</h3>
+        <div class="table-responsive" style="max-height:380px; overflow-y:auto; margin-top:10px;">
+            <table>
+                <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th></tr></thead>
+                <tbody>${paymentHistory.length === 0
+                    ? '<tr><td colspan="3" style="text-align:center;color:var(--text-light);">Sin pagos registrados aún.</td></tr>'
+                    : paymentHistory.map(p => `<tr>
+                        <td>${formatDateDMY(p.fecha)}</td>
+                        <td>${p.nombre}</td>
+                        <td class="text-success" style="font-weight:bold;">${formatMoney(p.monto)}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>
+        <div class="modal-footer"><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cerrar</button></div>
+    </div>`;
+    document.body.appendChild(modal);
 }
 
 function exportarJSON() {
@@ -1567,7 +2053,8 @@ function exportarJSON() {
         version: 2,
         exportDate: new Date().toISOString(),
         debts: debts,
-        incomes: incomes
+        incomes: incomes,
+        paymentHistory: paymentHistory
     };
 
     const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
@@ -1592,12 +2079,14 @@ function importarJSON(e) {
             const parsed = JSON.parse(ev.target.result);
             debts = Array.isArray(parsed) ? parsed : (parsed.debts ? parsed.debts : []);
             incomes = parsed.incomes || [];
+            if (parsed.paymentHistory) paymentHistory = parsed.paymentHistory;
             
             normalizarDeudas(); 
 
             if(debts.length > 0 || incomes.length > 0) {
                 persistDebts(); 
                 persistIncomes();
+                localStorage.setItem('paymentHistory', JSON.stringify(paymentHistory));
                 updateUI();
                 showToast(`✔ Registros importados correctamente`, 'success');
             } else {
@@ -1629,11 +2118,11 @@ function compartirReporteTexto() {
         if (status.class !== 'pagado') {
             let printMonto = d.tipo === 'plazos' ? (d.monto/d.mesesTotal) : (d.tipo === 'unica' ? d.monto - (d.pagado||0) : d.monto);
             
-            const dMonth = d.fechaLimite ? d.fechaLimite.slice(0, 7) : null;
+            const dDate = d.fechaLimite;
             let mMatch = true;
-            if (mFrom && mTo) mMatch = dMonth >= mFrom && dMonth <= mTo;
-            else if (mFrom) mMatch = dMonth === mFrom;
-            else if (mTo) mMatch = dMonth === mTo;
+            if (mFrom && mTo) mMatch = dDate >= mFrom && dDate <= mTo;
+            else if (mFrom) mMatch = dDate === mFrom;
+            else if (mTo) mMatch = dDate === mTo;
             
             if(mMatch) {
                 totalMesesResta += printMonto;
@@ -1691,11 +2180,11 @@ function compartirReporteImagen() {
         if (status.class !== 'pagado') {
             let printMonto = d.tipo === 'plazos' ? (d.monto/d.mesesTotal) : (d.tipo === 'unica' ? d.monto - (d.pagado||0) : d.monto);
             
-            const dMonth = d.fechaLimite ? d.fechaLimite.slice(0, 7) : null;
+            const dDate = d.fechaLimite;
             let mMatch = true;
-            if (mFrom && mTo) mMatch = dMonth >= mFrom && dMonth <= mTo;
-            else if (mFrom) mMatch = dMonth === mFrom;
-            else if (mTo) mMatch = dMonth === mTo;
+            if (mFrom && mTo) mMatch = dDate >= mFrom && dDate <= mTo;
+            else if (mFrom) mMatch = dDate === mFrom;
+            else if (mTo) mMatch = dDate === mTo;
             
             if(mMatch) {
                 total += printMonto;
@@ -1773,11 +2262,11 @@ function compartirReporteTabla() {
         if (status.class !== 'pagado') {
             let printMonto = d.tipo === 'plazos' ? (d.monto/d.mesesTotal) : (d.tipo === 'unica' ? d.monto - (d.pagado||0) : d.monto);
             
-            const dMonth = d.fechaLimite ? d.fechaLimite.slice(0, 7) : null;
+            const dDate = d.fechaLimite;
             let mMatch = true;
-            if (mFrom && mTo) mMatch = dMonth >= mFrom && dMonth <= mTo;
-            else if (mFrom) mMatch = dMonth === mFrom;
-            else if (mTo) mMatch = dMonth === mTo;
+            if (mFrom && mTo) mMatch = dDate >= mFrom && dDate <= mTo;
+            else if (mFrom) mMatch = dDate === mFrom;
+            else if (mTo) mMatch = dDate === mTo;
             
             if(mMatch) {
                 total += printMonto;
@@ -1821,25 +2310,75 @@ function generateFinancials(d) {
     let text = '';
     let resta = d.tipo === 'plazos' ? (d.monto - (d.monto/d.mesesTotal)*d.mesesPagados) : (d.monto - (d.pagado||0));
     
+    const progressBar = (pct, color) => `
+        <div style="background:var(--border); border-radius:99px; height:6px; margin-top:5px; overflow:hidden;">
+            <div style="width:${Math.min(pct,100)}%; background:${color}; height:100%; border-radius:99px; transition:width 0.4s;"></div>
+        </div>
+        <small style="color:var(--text-light);">${Math.round(pct)}% completado</small>`;
+
     if (d.tipo === 'unica') {
-        text = `Total: ${formatMoney(d.monto)}<br><strong>Falta: ${formatMoney(resta)}</strong><br><small style="color:var(--text-light);">Ahorro sugerido: ${formatMoney(resta/4)}/sem</small>`;
+        const pct = d.monto > 0 ? ((d.pagado||0)/d.monto)*100 : 0;
+        text = `Total: ${formatMoney(d.monto)}<br><strong>Falta: ${formatMoney(resta)}</strong>
+                ${progressBar(pct, 'var(--primary)')}
+                <br><small style="color:var(--text-light);">Ahorro sugerido: ${formatMoney(resta/4)}/sem</small>`;
     } else if (d.tipo === 'plazos') {
         const cuota = d.monto/d.mesesTotal;
-        text = `Total: ${formatMoney(d.monto)}<br>Progreso: ${d.mesesPagados}/${d.mesesTotal} meses<br><strong style="color:var(--primary);">Cuota: ${formatMoney(cuota)}/mes</strong><br><strong style="color:var(--danger);">Resta: ${formatMoney(resta)}</strong><br><small style="color:var(--text-light);">Ahorro sugerido: ${formatMoney(cuota/4)}/sem</small>`;
+        const pct = d.mesesTotal > 0 ? (d.mesesPagados/d.mesesTotal)*100 : 0;
+        text = `Total: ${formatMoney(d.monto)}<br>Progreso: ${d.mesesPagados}/${d.mesesTotal} meses
+                ${progressBar(pct, 'var(--success)')}
+                <br><strong style="color:var(--primary);">Cuota: ${formatMoney(cuota)}/mes</strong><br>
+                <strong style="color:var(--danger);">Resta: ${formatMoney(resta)}</strong>`;
     } else if (d.tipo === 'servicio' || d.tipo === 'deuda_recurr') {
         const numSemanas = (parseInt(d.frecuencia) || 1) * 4;
         text = `<strong>Costo: ${formatMoney(d.monto)}</strong><br><small style="color:var(--text-light);">Ahorro sugerido: ${formatMoney(d.monto/numSemanas)}/sem</small>`;
     } else if (d.tipo === 'semanal') {
         const costoSem = d.monto * (d.dias || []).length;
-        text = `Días: ${d.dias.map(x=>['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][x]).join(', ')}<br><strong style="color:var(--success);">Semana: ${formatMoney(costoSem)}</strong>`;
+        text = `Días: ${d.dias.map(x=>['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][x]).join(', ')}<br>
+                <strong style="color:var(--success);">Semana: ${formatMoney(costoSem)}</strong>`;
     }
     return text;
 }
 
+function getUrgenciaNivel(d) {
+    const status = getStatus(d);
+    if (status.class === 'vencido') return 3;
+    if (status.class === 'proximo') return 2;
+    if (status.class === 'pendiente') return 1;
+    return 0;
+}
+
+function renderSaludFinanciera() {
+    const vencidas = debts.filter(d => getStatus(d).class === 'vencido').length;
+    const proximas = debts.filter(d => getStatus(d).class === 'proximo').length;
+    const pendientes = debts.filter(d => getStatus(d).class === 'pendiente').length;
+    const total = debts.filter(d => getStatus(d).class !== 'pagado').length;
+    
+    let score = 100;
+    score -= vencidas * 20;
+    score -= proximas * 8;
+    score = Math.max(0, Math.min(100, score));
+    
+    let emoji, titulo, msg, color;
+    if (score >= 80) { emoji='💚'; titulo='Excelente'; msg='Sin deudas urgentes. Sigue así.'; color='var(--success)'; }
+    else if (score >= 60) { emoji='💛'; titulo='Cuidado'; msg=`${proximas} pago(s) próximos. Prepárate.`; color='var(--warning)'; }
+    else if (score >= 40) { emoji='🟠'; titulo='Alerta'; msg=`${vencidas} vencida(s) y ${proximas} próxima(s).`; color='#f97316'; }
+    else { emoji='🔴'; titulo='Crítico'; msg=`¡${vencidas} deuda(s) vencida(s)! Actúa hoy.`; color='var(--danger)'; }
+    
+    const card = document.getElementById('salud-financiera-card');
+    if (!card) return;
+    card.style.borderColor = color;
+    document.getElementById('salud-emoji').textContent = emoji;
+    document.getElementById('salud-titulo').textContent = `Salud Financiera: ${titulo}`;
+    document.getElementById('salud-titulo').style.color = color;
+    document.getElementById('salud-msg').textContent = msg;
+    document.getElementById('salud-score').textContent = `${score}/100`;
+    document.getElementById('salud-score').style.color = color;
+}
+
 function updateUI() {
     let totals = { pend: 0, venc: 0, serv: 0, mes: 0 };
-    const monthFrom = document.getElementById('monthSelectorFrom').value;
-    const monthTo = document.getElementById('monthSelectorTo').value;
+    const dateFrom = document.getElementById('monthSelectorFrom').value;
+    const dateTo = document.getElementById('monthSelectorTo').value;
     const search = document.getElementById('searchInput').value.toLowerCase();
     
     const list = document.getElementById('debt-list');
@@ -1867,39 +2406,42 @@ function updateUI() {
             totals.pend += resta;
             if (status.class === 'vencido') totals.venc += resta;
             
-            // Corrige el monto de Servicios calculando estrictamente solo los del tipo 'servicio'
             if (d.tipo === 'servicio') {
                 if(!d.excludedFromDesglose) totals.serv += d.monto;
             }
         }
 
-        const debtMonth = d.fechaLimite ? d.fechaLimite.slice(0, 7) : null;
-        let matchesMonth = true;
-        if (monthFrom && monthTo) {
-            matchesMonth = debtMonth >= monthFrom && debtMonth <= monthTo;
-        } else if (monthFrom) {
-            matchesMonth = debtMonth === monthFrom;
-        } else if (monthTo) {
-            matchesMonth = debtMonth === monthTo;
+        const debtDate = d.fechaLimite;
+        let matchesDate = true;
+        if (dateFrom && dateTo) {
+            matchesDate = debtDate >= dateFrom && debtDate <= dateTo;
+        } else if (dateFrom) {
+            matchesDate = debtDate === dateFrom;
+        } else if (dateTo) {
+            matchesDate = debtDate === dateTo;
         }
 
-        if (matchesMonth && status.class !== 'pagado') {
+        if (matchesDate && status.class !== 'pagado') {
             totals.mes += (d.tipo === 'plazos' ? d.monto/d.mesesTotal : resta);
         }
 
-        // Color para el badge de TIPO
         let typeColor = '';
         let tipoDisplay = d.tipo.toUpperCase();
         if(d.tipo === 'unica') typeColor = '#3b82f6';
         else if(d.tipo === 'plazos') typeColor = '#f59e0b';
         else if(d.tipo === 'servicio') typeColor = '#8b5cf6';
-        else if(d.tipo === 'deuda_recurr') { typeColor = '#ec4899'; tipoDisplay = 'DEUDA'; } // Pink
+        else if(d.tipo === 'deuda_recurr') { typeColor = '#ec4899'; tipoDisplay = 'DEUDA'; }
         else if(d.tipo === 'semanal') typeColor = '#10b981';
         
         const badgeTipo = `<span class="badge" style="background-color:${typeColor}; color:white; font-size:0.7rem;">${tipoDisplay}</span>`;
         const notasHtml = d.notas ? `<br><small style="color:var(--text-light); font-style:italic;">Notas: ${d.notas}</small>` : '';
 
-        const row = `<tr>
+        const urgNivel = getUrgenciaNivel(d);
+        const urgStyle = urgNivel === 3 ? 'border-left: 3px solid var(--danger);'
+                       : urgNivel === 2 ? 'border-left: 3px solid var(--warning);'
+                       : '';
+                       
+        const row = `<tr style="${urgStyle}">
             <td><strong class="concepto-link" data-action="ver-detalles" data-id="${d.id}">${d.nombre}</strong>${notasHtml}</td>
             <td>${d.categoria}</td>
             <td>${badgeTipo}</td>
@@ -1911,21 +2453,21 @@ function updateUI() {
         
         list.innerHTML += row;
         
-        if (status.class !== 'pagado' && d.fechaLimite && matchesMonth) {
+        if (status.class !== 'pagado' && d.fechaLimite && matchesDate) {
             urgency.innerHTML += `<tr><td><strong class="concepto-link" data-action="ver-detalles" data-id="${d.id}">${d.nombre}</strong>${notasHtml}</td><td>${badgeTipo}</td><td>${formatMoney(d.tipo==='plazos'?d.monto/d.mesesTotal:resta)}</td><td>${formatDateDMY(d.fechaLimite)}</td><td><span class="badge ${status.class}">${status.label}</span></td></tr>`;
         }
     });
 
     let tIngresosMes = 0;
     incomes.forEach(inc => {
-        const incMonth = inc.date ? inc.date.slice(0, 7) : null;
+        const incDate = inc.date;
         let incMatches = true;
-        if (monthFrom && monthTo) {
-            incMatches = incMonth >= monthFrom && incMonth <= monthTo;
-        } else if (monthFrom) {
-            incMatches = incMonth === monthFrom;
-        } else if (monthTo) {
-            incMatches = incMonth === monthTo;
+        if (dateFrom && dateTo) {
+            incMatches = incDate >= dateFrom && incDate <= dateTo;
+        } else if (dateFrom) {
+            incMatches = incDate === dateFrom;
+        } else if (dateTo) {
+            incMatches = incDate === dateTo;
         }
         
         if (incMatches || inc.forceCurrentMonth) tIngresosMes += (parseFloat(inc.amount) || parseFloat(inc.monto) || 0); 
@@ -1958,7 +2500,563 @@ function updateUI() {
     incRestanteEl.className = 'amount ' + objRestante.class;
 
     renderIncomes();
+    renderSaludFinanciera();
 }
+
+// ============================================================
+// ANALYTICS MODULE - FUNCIONALIDADES FINANCIERAS COMPLETAS
+// ============================================================
+
+const CHART_COLORS = [
+    '#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6',
+    '#ec4899','#06b6d4','#f97316','#84cc16','#6366f1'
+];
+
+let analyticsCharts = {};
+let currentAnalyticsTab = 'general';
+
+function switchAnalyticsTab(tab, btn) {
+    currentAnalyticsTab = tab;
+    document.querySelectorAll('.analytics-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.analytics-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('analytics-panel-' + tab).classList.add('active');
+    btn.classList.add('active');
+    renderAnalyticsTab(tab);
+}
+
+function renderAnalytics() {
+    renderAnalyticsTab(currentAnalyticsTab);
+}
+
+function renderAnalyticsTab(tab) {
+    if (tab === 'general') renderTabGeneral();
+    else if (tab === 'categorias') renderTabCategorias();
+    else if (tab === 'proyeccion') renderTabProyeccion();
+    else if (tab === 'flujo') renderTabFlujo();
+    else if (tab === 'ranking') renderTabRanking();
+}
+
+function destroyChart(id) {
+    if (analyticsCharts[id]) {
+        analyticsCharts[id].destroy();
+        delete analyticsCharts[id];
+    }
+}
+
+function getDebtPending(d) {
+    if (d.tipo === 'plazos') return d.monto - (d.monto / d.mesesTotal) * d.mesesPagados;
+    return d.monto - (d.pagado || 0);
+}
+
+function getDebtMonthlyPayment(d) {
+    if (d.tipo === 'plazos') return d.monto / d.mesesTotal;
+    if (d.tipo === 'servicio' || d.tipo === 'deuda_recurr') return d.monto / (d.frecuencia || 1);
+    if (d.tipo === 'semanal') return d.monto * (d.dias || []).length * 4.33;
+    return d.monto;
+}
+
+// ─── TAB GENERAL ────────────────────────────────────────────
+function renderTabGeneral() {
+    const activeDebts = debts.filter(d => getStatus(d).class !== 'pagado');
+    const totalPending = activeDebts.reduce((s, d) => s + getDebtPending(d), 0);
+    const totalIngresos = incomes.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
+    const totalPagado = paymentHistory.reduce((s, p) => s + (parseFloat(p.monto) || 0), 0);
+    const monthlyCommit = activeDebts.reduce((s, d) => s + getDebtMonthlyPayment(d), 0);
+    const vencidas = debts.filter(d => getStatus(d).class === 'vencido').length;
+    const proximas = debts.filter(d => getStatus(d).class === 'proximo').length;
+    const cobertura = monthlyCommit > 0 ? Math.min((totalIngresos / monthlyCommit) * 100, 999) : 0;
+
+    // KPIs
+    const kpiRow = document.getElementById('kpi-row-general');
+    kpiRow.innerHTML = `
+        <div class="kpi-card">
+            <span class="kpi-icon">💳</span>
+            <span class="kpi-label">Total Deuda Activa</span>
+            <span class="kpi-value text-danger">${formatMoney(totalPending)}</span>
+            <span class="kpi-sub">${activeDebts.length} registro(s) pendiente(s)</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-icon">✅</span>
+            <span class="kpi-label">Total Pagado Histórico</span>
+            <span class="kpi-value text-success">${formatMoney(totalPagado)}</span>
+            <span class="kpi-sub">${paymentHistory.length} pago(s) registrado(s)</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-icon">📅</span>
+            <span class="kpi-label">Compromiso Mensual</span>
+            <span class="kpi-value text-primary">${formatMoney(monthlyCommit)}</span>
+            <span class="kpi-sub">estimado de todos los tipos</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-icon">💰</span>
+            <span class="kpi-label">Cobertura de Deuda</span>
+            <span class="kpi-value" style="color:${cobertura >= 100 ? 'var(--success)' : 'var(--danger)'};">${cobertura > 0 ? Math.round(cobertura) + '%' : 'N/A'}</span>
+            <span class="kpi-sub">ingresos vs compromisos</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-icon">⚠️</span>
+            <span class="kpi-label">Deudas Vencidas</span>
+            <span class="kpi-value" style="color:${vencidas > 0 ? 'var(--danger)' : 'var(--success)'};">${vencidas}</span>
+            <span class="kpi-sub">${proximas} próxima(s) a vencer</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-icon">📈</span>
+            <span class="kpi-label">Ratio Deuda/Ingreso</span>
+            <span class="kpi-value" style="color:${totalIngresos > 0 && (totalPending/totalIngresos) < 3 ? 'var(--warning)' : 'var(--danger)'};">${totalIngresos > 0 ? (totalPending/totalIngresos).toFixed(1) + 'x' : 'N/A'}</span>
+            <span class="kpi-sub">deuda total vs ingresos totales</span>
+        </div>
+    `;
+
+    // Chart: Por Tipo
+    const tiposMap = {};
+    activeDebts.forEach(d => {
+        const lbl = {unica:'Única',plazos:'A Plazos',servicio:'Servicio',deuda_recurr:'Deuda Rec.',semanal:'Semanal'}[d.tipo] || d.tipo;
+        tiposMap[lbl] = (tiposMap[lbl] || 0) + getDebtPending(d);
+    });
+    destroyChart('tipo');
+    if (Object.keys(tiposMap).length > 0) {
+        analyticsCharts['tipo'] = new Chart(document.getElementById('chart-tipo'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(tiposMap),
+                datasets: [{ data: Object.values(tiposMap), backgroundColor: CHART_COLORS, borderWidth: 2, borderColor: 'var(--surface)' }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#333', font: { size: 11 }, padding: 12 }},
+                    tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${formatMoney(ctx.raw)}` }}
+                }
+            }
+        });
+    } else {
+        document.getElementById('chart-tipo').parentElement.innerHTML += '<p style="text-align:center;color:var(--text-light);font-size:0.85rem;">Sin datos aún.</p>';
+    }
+
+    // Chart: Estado
+    const estadoMap = { 'Pendiente': 0, 'Próximo': 0, 'Vencido': 0, 'Pagado': 0 };
+    debts.forEach(d => {
+        const s = getStatus(d).class;
+        if (s === 'pendiente') estadoMap['Pendiente']++;
+        else if (s === 'proximo') estadoMap['Próximo']++;
+        else if (s === 'vencido') estadoMap['Vencido']++;
+        else estadoMap['Pagado']++;
+    });
+    destroyChart('estado');
+    analyticsCharts['estado'] = new Chart(document.getElementById('chart-estado'), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(estadoMap),
+            datasets: [{ 
+                data: Object.values(estadoMap),
+                backgroundColor: ['#3b82f6','#f59e0b','#ef4444','#10b981'],
+                borderRadius: 8, borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: true,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw} deuda(s)` }}},
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1, color: '#94a3b8' }, grid: { color: 'rgba(100,116,139,0.15)' }},
+                x: { ticks: { color: '#94a3b8' }, grid: { display: false }}
+            }
+        }
+    });
+
+    // Chart: Historial de pagos (6 meses)
+    const now = new Date();
+    const mesesLabels = [];
+    const mesesData = [];
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        const mes = d.toLocaleString('es-MX', { month: 'short', year: '2-digit' });
+        mesesLabels.push(mes.charAt(0).toUpperCase() + mes.slice(1));
+        mesesData.push(paymentHistory.filter(p => p.fecha && p.fecha.startsWith(key)).reduce((s, p) => s + (parseFloat(p.monto)||0), 0));
+    }
+    destroyChart('pagosHist');
+    analyticsCharts['pagosHist'] = new Chart(document.getElementById('chart-pagos-hist'), {
+        type: 'bar',
+        data: {
+            labels: mesesLabels,
+            datasets: [{
+                label: 'Pagos realizados',
+                data: mesesData,
+                backgroundColor: 'rgba(16,185,129,0.75)',
+                borderColor: '#10b981',
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: true,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${formatMoney(ctx.raw)}` }}},
+            scales: {
+                y: { beginAtZero: true, ticks: { callback: v => '$'+v.toLocaleString('es-MX'), color: '#94a3b8' }, grid: { color: 'rgba(100,116,139,0.15)' }},
+                x: { ticks: { color: '#94a3b8' }, grid: { display: false }}
+            }
+        }
+    });
+}
+
+// ─── TAB CATEGORÍAS ─────────────────────────────────────────
+function renderTabCategorias() {
+    const activeDebts = debts.filter(d => getStatus(d).class !== 'pagado');
+    const catMonto = {};
+    const catCount = {};
+    activeDebts.forEach(d => {
+        const c = d.categoria || 'Sin categoría';
+        catMonto[c] = (catMonto[c] || 0) + getDebtPending(d);
+        catCount[c] = (catCount[c] || 0) + 1;
+    });
+    const totalMonto = Object.values(catMonto).reduce((s,v) => s+v, 0);
+    const cats = Object.keys(catMonto).sort((a,b) => catMonto[b]-catMonto[a]);
+
+    // Chart: monto por categoría
+    destroyChart('catMonto');
+    analyticsCharts['catMonto'] = new Chart(document.getElementById('chart-cat-monto'), {
+        type: 'doughnut',
+        data: {
+            labels: cats,
+            datasets: [{ data: cats.map(c => catMonto[c]), backgroundColor: CHART_COLORS, borderWidth: 2, borderColor: 'var(--surface)' }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: true,
+            plugins: {
+                legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 11 }, padding: 10 }},
+                tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${formatMoney(ctx.raw)}` }}
+            }
+        }
+    });
+
+    // Chart: cantidad por categoría
+    destroyChart('catCount');
+    analyticsCharts['catCount'] = new Chart(document.getElementById('chart-cat-count'), {
+        type: 'bar',
+        data: {
+            labels: cats,
+            datasets: [{ 
+                label: 'Cantidad', data: cats.map(c => catCount[c]),
+                backgroundColor: cats.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
+                borderRadius: 8, borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: true,
+            indexAxis: 'y',
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw} deuda(s)` }}},
+            scales: {
+                x: { beginAtZero: true, ticks: { stepSize: 1, color: '#94a3b8' }, grid: { color: 'rgba(100,116,139,0.15)' }},
+                y: { ticks: { color: '#94a3b8' }, grid: { display: false }}
+            }
+        }
+    });
+
+    // Budget breakdown list
+    const bbList = document.getElementById('budget-breakdown-list');
+    bbList.innerHTML = cats.length === 0
+        ? '<p style="color:var(--text-light);text-align:center;padding:20px;">Sin datos de categorías.</p>'
+        : cats.map((c, i) => {
+            const pct = totalMonto > 0 ? (catMonto[c] / totalMonto * 100) : 0;
+            const color = CHART_COLORS[i % CHART_COLORS.length];
+            return `<div class="budget-row">
+                <span class="budget-dot" style="background:${color};"></span>
+                <span class="budget-name">${c}</span>
+                <span class="budget-pct">${pct.toFixed(1)}%</span>
+                <div class="budget-bar-track">
+                    <div class="budget-bar-fill" style="width:${pct}%; background:${color};"></div>
+                </div>
+                <span class="budget-val" style="color:${color};">${formatMoney(catMonto[c])}</span>
+                <span style="color:var(--text-light);font-size:0.78rem;min-width:60px;text-align:right;">${catCount[c]} deuda(s)</span>
+            </div>`;
+        }).join('');
+}
+
+// ─── TAB PROYECCIÓN ─────────────────────────────────────────
+function renderTabProyeccion() {
+    const activeDebts = debts.filter(d => getStatus(d).class !== 'pagado');
+    const now = new Date();
+    const months = [];
+    const monthLabels = [];
+    const debtRemaining = [];
+    const pagosPorMes = [];
+
+    // Build 12-month projection
+    let runningDebt = activeDebts.reduce((s, d) => s + getDebtPending(d), 0);
+    for (let i = 0; i < 13; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        const mes = d.toLocaleString('es-MX', { month: 'short', year: '2-digit' });
+        months.push(key);
+        monthLabels.push(i === 0 ? 'Hoy' : mes.charAt(0).toUpperCase() + mes.slice(1));
+
+        // Calculate payments due in this month
+        let pagosMes = 0;
+        activeDebts.forEach(d => {
+            if (d.tipo === 'plazos') pagosMes += d.monto / d.mesesTotal;
+            else if (d.tipo === 'servicio' || d.tipo === 'deuda_recurr') {
+                const frec = d.frecuencia || 1;
+                if (i % frec === 0) pagosMes += d.monto;
+            } else if (d.tipo === 'semanal') pagosMes += d.monto * (d.dias || []).length * 4.33;
+            else if (d.tipo === 'unica' && i === 0) pagosMes += getDebtPending(d);
+        });
+        pagosPorMes.push(pagosMes);
+        debtRemaining.push(Math.max(0, runningDebt));
+        if (i > 0) runningDebt = Math.max(0, runningDebt - pagosMes);
+    }
+
+    // Freedom date estimate
+    let freedomDate = null;
+    for (let i = 0; i < 13; i++) {
+        if (debtRemaining[i] <= 0) { freedomDate = months[i]; break; }
+    }
+    const fdBox = document.getElementById('fd-date-text');
+    const fdSub = document.getElementById('fd-date-sub');
+    if (freedomDate) {
+        const d = new Date(freedomDate + '-01');
+        fdBox.textContent = d.toLocaleString('es-MX', { month: 'long', year: 'numeric' });
+        fdSub.textContent = 'Proyección basada en tus pagos habituales ✓';
+    } else {
+        fdBox.textContent = 'Más de 12 meses';
+        fdSub.textContent = `Deuda restante estimada en 12 meses: ${formatMoney(debtRemaining[12])}`;
+    }
+
+    // Projection chart
+    destroyChart('proyeccion');
+    analyticsCharts['proyeccion'] = new Chart(document.getElementById('chart-proyeccion'), {
+        type: 'line',
+        data: {
+            labels: monthLabels,
+            datasets: [
+                {
+                    label: 'Deuda Restante',
+                    data: debtRemaining,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239,68,68,0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    borderWidth: 2.5,
+                },
+                {
+                    label: 'Pago del Mes',
+                    data: pagosPorMes,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16,185,129,0.08)',
+                    fill: false,
+                    tension: 0.3,
+                    borderDash: [5,4],
+                    pointRadius: 3,
+                    borderWidth: 2,
+                }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: true,
+            plugins: {
+                legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 14 }},
+                tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${formatMoney(ctx.raw)}` }}
+            },
+            scales: {
+                y: { beginAtZero: true, ticks: { callback: v => '$'+v.toLocaleString('es-MX'), color: '#94a3b8' }, grid: { color: 'rgba(100,116,139,0.12)' }},
+                x: { ticks: { color: '#94a3b8' }, grid: { display: false }}
+            }
+        }
+    });
+
+    // Projection table
+    const tbody = document.getElementById('projection-tbody');
+    tbody.innerHTML = monthLabels.slice(1).map((label, i) => {
+        const idx = i + 1;
+        const pagos = activeDebts.filter(d => {
+            if (d.tipo === 'servicio' || d.tipo === 'deuda_recurr') return (idx % (d.frecuencia||1)) === 0;
+            if (d.tipo === 'unica' || d.tipo === 'plazos') return true;
+            return true;
+        });
+        return `<tr>
+            <td style="font-weight:700;">${label}</td>
+            <td style="color:var(--text-light);">${pagos.length} deuda(s)</td>
+            <td style="font-weight:700;color:var(--primary);">${formatMoney(pagosPorMes[idx])}</td>
+            <td style="font-weight:700;color:${debtRemaining[idx] > 0 ? 'var(--danger)' : 'var(--success)'};">${debtRemaining[idx] > 0 ? formatMoney(debtRemaining[idx]) : '🎉 ¡Libre!'}</td>
+        </tr>`;
+    }).join('');
+}
+
+// ─── TAB FLUJO DE CAJA ──────────────────────────────────────
+function renderTabFlujo() {
+    const monthMap = {};
+
+    incomes.forEach(inc => {
+        if (!inc.date) return;
+        const key = inc.date.slice(0,7);
+        if (!monthMap[key]) monthMap[key] = { ingresos: 0, gastos: 0 };
+        monthMap[key].ingresos += parseFloat(inc.amount) || 0;
+    });
+    paymentHistory.forEach(p => {
+        if (!p.fecha) return;
+        const key = p.fecha.slice(0,7);
+        if (!monthMap[key]) monthMap[key] = { ingresos: 0, gastos: 0 };
+        monthMap[key].gastos += parseFloat(p.monto) || 0;
+    });
+
+    const keys = Object.keys(monthMap).sort();
+    const labels = keys.map(k => {
+        const d = new Date(k + '-01');
+        const m = d.toLocaleString('es-MX', { month: 'short', year: '2-digit' });
+        return m.charAt(0).toUpperCase() + m.slice(1);
+    });
+    const ingresoData = keys.map(k => monthMap[k].ingresos);
+    const gastoData = keys.map(k => monthMap[k].gastos);
+    const balanceData = keys.map(k => monthMap[k].ingresos - monthMap[k].gastos);
+
+    destroyChart('flujo');
+    analyticsCharts['flujo'] = new Chart(document.getElementById('chart-flujo'), {
+        type: 'bar',
+        data: {
+            labels: labels.length > 0 ? labels : ['Sin datos'],
+            datasets: [
+                { label: 'Ingresos', data: ingresoData, backgroundColor: 'rgba(16,185,129,0.8)', borderRadius: 6, borderSkipped: false },
+                { label: 'Pagos', data: gastoData, backgroundColor: 'rgba(239,68,68,0.8)', borderRadius: 6, borderSkipped: false },
+                { type: 'line', label: 'Balance', data: balanceData, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.08)', tension: 0.4, fill: false, borderWidth: 2.5, pointRadius: 4, yAxisID: 'y' }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: true,
+            plugins: {
+                legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 14 }},
+                tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${formatMoney(ctx.raw)}` }}
+            },
+            scales: {
+                y: { beginAtZero: false, ticks: { callback: v => '$'+v.toLocaleString('es-MX'), color: '#94a3b8' }, grid: { color: 'rgba(100,116,139,0.12)' }},
+                x: { ticks: { color: '#94a3b8' }, grid: { display: false }}
+            }
+        }
+    });
+
+    // Flujo table
+    const tbody = document.getElementById('flujo-tbody');
+    if (keys.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-light);padding:20px;">Sin datos de ingresos o pagos registrados aún.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = [...keys].reverse().map((k, i) => {
+        const balance = monthMap[k].ingresos - monthMap[k].gastos;
+        const d = new Date(k + '-01');
+        const mes = d.toLocaleString('es-MX', { month: 'long', year: 'numeric' });
+        return `<tr>
+            <td style="font-weight:700;text-transform:capitalize;">${mes}</td>
+            <td class="text-success" style="font-weight:700;">${formatMoney(monthMap[k].ingresos)}</td>
+            <td class="text-danger" style="font-weight:700;">${formatMoney(monthMap[k].gastos)}</td>
+            <td style="font-weight:800;" class="${balance >= 0 ? 'text-success' : 'text-danger'}">${balance >= 0 ? '+' : ''}${formatMoney(balance)}</td>
+        </tr>`;
+    }).join('');
+}
+
+// ─── TAB RANKING ────────────────────────────────────────────
+function renderTabRanking() {
+    const activeDebts = debts.filter(d => getStatus(d).class !== 'pagado');
+    const ranked = [...activeDebts].sort((a, b) => getDebtPending(b) - getDebtPending(a)).slice(0, 8);
+    const maxMonto = ranked.length > 0 ? getDebtPending(ranked[0]) : 1;
+
+    // Ranking list
+    const rankLista = document.getElementById('ranking-lista');
+    if (ranked.length === 0) {
+        rankLista.innerHTML = '<p style="color:var(--success);text-align:center;padding:20px;">🎉 ¡Sin deudas activas!</p>';
+    } else {
+        rankLista.innerHTML = ranked.map((d, i) => {
+            const pending = getDebtPending(d);
+            const pct = (pending / maxMonto) * 100;
+            const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1)+'';
+            return `<div class="debt-ranking-item">
+                <span class="rank-num">${medal}</span>
+                <div class="rank-info">
+                    <strong>${d.nombre}</strong>
+                    <small>${d.categoria} · ${d.tipo.toUpperCase()}</small>
+                </div>
+                <div class="rank-bar-wrap">
+                    <div class="rank-bar" style="width:${pct}%; background:${CHART_COLORS[i % CHART_COLORS.length]};"></div>
+                </div>
+                <span class="rank-amount">${formatMoney(pending)}</span>
+            </div>`;
+        }).join('');
+    }
+
+    // Urgencia chart (radar)
+    const urgLabels = ['Vencidas', 'Próximas', 'Pendientes', 'Servicios', 'Pagadas'];
+    const urgData = [
+        debts.filter(d => getStatus(d).class === 'vencido').length,
+        debts.filter(d => getStatus(d).class === 'proximo').length,
+        debts.filter(d => getStatus(d).class === 'pendiente').length,
+        debts.filter(d => d.tipo === 'servicio').length,
+        debts.filter(d => getStatus(d).class === 'pagado').length,
+    ];
+    destroyChart('urgencia');
+    analyticsCharts['urgencia'] = new Chart(document.getElementById('chart-urgencia'), {
+        type: 'radar',
+        data: {
+            labels: urgLabels,
+            datasets: [{
+                label: 'Deudas', data: urgData,
+                backgroundColor: 'rgba(37,99,235,0.18)',
+                borderColor: '#2563eb', borderWidth: 2,
+                pointBackgroundColor: '#2563eb', pointRadius: 5
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: true,
+            plugins: { legend: { display: false }},
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1, color: '#94a3b8', backdropColor: 'transparent' },
+                    grid: { color: 'rgba(100,116,139,0.2)' },
+                    pointLabels: { color: '#64748b', font: { size: 11, weight: '700' }}
+                }
+            }
+        }
+    });
+
+    // Estrategia recomendada
+    const estrategiaEl = document.getElementById('estrategia-pago');
+    const vencidas = activeDebts.filter(d => getStatus(d).class === 'vencido').sort((a,b) => getDebtPending(a)-getDebtPending(b));
+    const menorMonto = [...activeDebts].sort((a,b) => getDebtPending(a)-getDebtPending(b));
+    const mayorInteres = [...activeDebts].sort((a,b) => getDebtPending(b)-getDebtPending(a));
+
+    let html = '';
+    if (vencidas.length > 0) {
+        html += `<div style="background:#fef2f2;border-left:4px solid var(--danger);padding:14px;border-radius:0 10px 10px 0;margin-bottom:12px;">
+            <strong style="color:var(--danger);">🚨 Prioridad Inmediata — Pagar primero las VENCIDAS</strong>
+            <ol style="margin-top:8px;padding-left:18px;font-size:0.88rem;color:var(--text);">
+                ${vencidas.slice(0,3).map(d => `<li style="margin-bottom:4px;"><strong>${d.nombre}</strong> — ${formatMoney(getDebtPending(d))}</li>`).join('')}
+            </ol>
+        </div>`;
+    }
+    if (menorMonto.length > 0) {
+        html += `<div style="background:#f0fdf4;border-left:4px solid var(--success);padding:14px;border-radius:0 10px 10px 0;margin-bottom:12px;">
+            <strong style="color:var(--success);">⚡ Estrategia Bola de Nieve (menor a mayor monto)</strong>
+            <p style="font-size:0.82rem;color:var(--text-light);margin:4px 0 8px;">Liquida las más pequeñas primero para ganar impulso psicológico.</p>
+            <ol style="margin-top:4px;padding-left:18px;font-size:0.88rem;color:var(--text);">
+                ${menorMonto.slice(0,3).map(d => `<li style="margin-bottom:4px;"><strong>${d.nombre}</strong> — ${formatMoney(getDebtPending(d))}</li>`).join('')}
+            </ol>
+        </div>`;
+    }
+    if (mayorInteres.length > 0) {
+        html += `<div style="background:#eff6ff;border-left:4px solid var(--primary);padding:14px;border-radius:0 10px 10px 0;margin-bottom:12px;">
+            <strong style="color:var(--primary);">🎯 Estrategia Avalancha (mayor a menor monto)</strong>
+            <p style="font-size:0.82rem;color:var(--text-light);margin:4px 0 8px;">Ataca las más grandes primero para reducir más deuda en menos tiempo.</p>
+            <ol style="margin-top:4px;padding-left:18px;font-size:0.88rem;color:var(--text);">
+                ${mayorInteres.slice(0,3).map(d => `<li style="margin-bottom:4px;"><strong>${d.nombre}</strong> — ${formatMoney(getDebtPending(d))}</li>`).join('')}
+            </ol>
+        </div>`;
+    }
+    if (!html) html = '<p style="color:var(--success);text-align:center;padding:20px;">🎉 ¡Sin deudas activas! Excelente trabajo.</p>';
+    estrategiaEl.innerHTML = html;
+}
+// ============================================================
+// END ANALYTICS MODULE
+// ============================================================
 
 init();
 </script>
