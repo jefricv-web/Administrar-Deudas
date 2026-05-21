@@ -882,35 +882,194 @@
     </main>
 </div>
 
-<div class="modal-overlay" id="configAlertsModal">
-    <div class="modal">
-        <h3>⚙️ Configuración de Alertas</h3>
-        
-        <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:18px;">
-            <h4 style="margin-bottom:8px;">🔔 Notificaciones del Navegador (Push OS)</h4>
-            <p style="font-size:0.82rem; color:var(--text-light); margin-bottom:12px;">Activa las notificaciones nativas en tu dispositivo. Recibirás alertas locales cuando abras la app y haya pagos próximos.</p>
-            <button class="btn btn-outline" id="btnReqPush" onclick="requestLocalPushPermission()">Habilitar Notificaciones Locales</button>
+<style>
+/* ── NOTIFICATION CENTER STYLES ─────────────────────── */
+.notif-center-tabs { display:flex; gap:0; margin-bottom:18px; border-bottom:2px solid var(--border); }
+.notif-center-tab {
+    flex:1; padding:10px 6px; font-size:0.78rem; font-weight:700; cursor:pointer;
+    background:transparent; border:none; color:var(--text-light); font-family:inherit;
+    border-bottom:3px solid transparent; margin-bottom:-2px; transition:0.2s;
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+}
+.notif-center-tab.active { color:var(--primary); border-bottom-color:var(--primary); }
+.notif-center-tab:hover:not(.active) { color:var(--text); }
+.notif-center-panel { display:none; }
+.notif-center-panel.active { display:block; }
+.notif-status-badge {
+    display:inline-flex; align-items:center; gap:5px;
+    padding:5px 11px; border-radius:20px; font-size:0.75rem; font-weight:700; margin-bottom:12px;
+}
+.notif-status-badge.active { background:#d1fae5; color:#065f46; }
+.notif-status-badge.inactive { background:#fee2e2; color:#991b1b; }
+.notif-status-badge.pending { background:#fef3c7; color:#92400e; }
+.notif-status-badge.unsupported { background:#f1f5f9; color:#475569; }
+.notif-step {
+    display:flex; gap:10px; align-items:flex-start;
+    padding:10px; border-radius:8px; background:var(--bg); margin-bottom:8px; border:1px solid var(--border);
+}
+.notif-step-num {
+    min-width:22px; height:22px; border-radius:50%; background:var(--primary);
+    color:white; font-size:0.72rem; font-weight:800; display:flex; align-items:center; justify-content:center;
+}
+.notif-step-text { font-size:0.82rem; color:var(--text); line-height:1.4; }
+.notif-step-text a { color:var(--primary); font-weight:600; }
+.notif-blocked-box {
+    background:#fff7ed; border:1.5px solid #f97316; border-radius:8px; padding:12px; margin:12px 0;
+    font-size:0.82rem; color:#7c2d12; line-height:1.5;
+}
+.notif-success-box {
+    background:#f0fdf4; border:1.5px solid var(--success); border-radius:8px; padding:12px; margin:12px 0;
+    font-size:0.82rem; color:#14532d; line-height:1.5;
+}
+.schedule-option {
+    display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px;
+    border:1.5px solid var(--border); cursor:pointer; margin-bottom:7px; transition:0.18s;
+    background:var(--bg);
+}
+.schedule-option:hover { border-color:var(--primary); }
+.schedule-option input[type="radio"] { accent-color:var(--primary); cursor:pointer; }
+.schedule-option.selected { border-color:var(--primary); background:#eff6ff; }
+body.dark .schedule-option.selected { background:#1e3a5f; }
+</style>
+
+<div class="modal-overlay" id="configAlertsModal" role="dialog" aria-modal="true" aria-labelledby="notifCenterTitle">
+    <div class="modal" style="max-width:560px;">
+        <h3 id="notifCenterTitle" style="margin-bottom:4px;">🔔 Centro de Notificaciones</h3>
+        <p style="font-size:0.8rem; color:var(--text-light); margin-bottom:16px;">Configura cómo y cuándo quieres recibir recordatorios de tus pagos.</p>
+
+        <div class="notif-center-tabs" role="tablist" aria-label="Secciones de notificaciones">
+            <button class="notif-center-tab active" id="ntab-push" onclick="switchNotifTab('push')" role="tab" aria-selected="true">
+                <span style="font-size:1.2rem;">🔔</span>Push Local
+            </button>
+            <button class="notif-center-tab" id="ntab-email" onclick="switchNotifTab('email')" role="tab" aria-selected="false">
+                <span style="font-size:1.2rem;">📧</span>Correo
+            </button>
+            <button class="notif-center-tab" id="ntab-schedule" onclick="switchNotifTab('schedule')" role="tab" aria-selected="false">
+                <span style="font-size:1.2rem;">⏰</span>Programar
+            </button>
         </div>
 
-        <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:14px;">
-            <h4 style="margin-bottom:8px;">📧 Recordatorios por Correo (vía EmailJS)</h4>
-            <p style="font-size:0.82rem; color:var(--text-light); margin-bottom:12px;">Para recibir correos automáticos 3 días antes de un vencimiento, crea una cuenta gratuita en EmailJS y vincula tus credenciales aquí.</p>
-            
+        <!-- ── TAB: PUSH LOCAL ── -->
+        <div class="notif-center-panel active" id="npanel-push" role="tabpanel">
+            <div id="push-status-area"></div>
+
+            <p style="font-size:0.82rem; color:var(--text-light); margin-bottom:12px;">
+                Las notificaciones push te alertan en el navegador con un aviso del sistema operativo, incluso si la app está en segundo plano (mientras el navegador siga abierto).
+            </p>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+                <button class="btn" id="btnReqPush" onclick="requestLocalPushPermission()">🔔 Habilitar Notificaciones</button>
+                <button class="btn btn-outline btn-sm" id="btnTestPush" onclick="testPushNotification()" style="display:none;">🧪 Enviar prueba</button>
+            </div>
+
+            <div id="push-blocked-help" style="display:none;" class="notif-blocked-box">
+                <strong>⚠ Notificaciones bloqueadas por el navegador</strong><br>
+                Para habilitarlas manualmente:
+                <ul style="margin:6px 0 0 16px; padding:0;">
+                    <li><strong>Chrome/Edge:</strong> Haz clic en el ícono 🔒 o ⓘ junto a la URL → Permisos del sitio → Notificaciones → Permitir.</li>
+                    <li><strong>Firefox:</strong> Haz clic en el ícono 🛡 → Permisos → Notificaciones → Permitir.</li>
+                    <li><strong>Safari:</strong> Preferencias → Sitios web → Notificaciones → Permitir.</li>
+                </ul>
+                <br>⚠ <em>Nota: En archivos locales (file://), las notificaciones push no funcionan. Abre este archivo desde un servidor web local o usa la app desde un servidor.</em>
+            </div>
+        </div>
+
+        <!-- ── TAB: EMAIL ── -->
+        <div class="notif-center-panel" id="npanel-email" role="tabpanel">
+            <div id="email-status-area"></div>
+
+            <p style="font-size:0.82rem; color:var(--text-light); margin-bottom:10px;">
+                Recibe correos automáticos antes del vencimiento de tus deudas. Usa la plataforma gratuita <strong>EmailJS</strong> (sin backend).
+            </p>
+
+            <details style="margin-bottom:14px;">
+                <summary style="cursor:pointer; font-size:0.82rem; font-weight:700; color:var(--primary); padding:6px 0; user-select:none;">📖 ¿Cómo obtener mis credenciales de EmailJS? (clic para ver)</summary>
+                <div style="margin-top:10px; padding:2px 0;">
+                    <div class="notif-step">
+                        <div class="notif-step-num">1</div>
+                        <div class="notif-step-text">Ve a <a href="https://www.emailjs.com" target="_blank">emailjs.com</a> y crea una cuenta gratuita (hasta 200 correos/mes).</div>
+                    </div>
+                    <div class="notif-step">
+                        <div class="notif-step-num">2</div>
+                        <div class="notif-step-text"><strong>Email Services:</strong> Conecta tu cuenta de Gmail, Outlook, etc. Copia el <em>Service ID</em> que aparece.</div>
+                    </div>
+                    <div class="notif-step">
+                        <div class="notif-step-num">3</div>
+                        <div class="notif-step-text"><strong>Email Templates:</strong> Crea una plantilla con estas variables: <code style="background:var(--bg); padding:2px 5px; border-radius:4px; font-size:0.78rem;">{{debt_name}}</code>, <code style="background:var(--bg); padding:2px 5px; border-radius:4px; font-size:0.78rem;">{{debt_amount}}</code>, <code style="background:var(--bg); padding:2px 5px; border-radius:4px; font-size:0.78rem;">{{due_date}}</code>, <code style="background:var(--bg); padding:2px 5px; border-radius:4px; font-size:0.78rem;">{{status}}</code>. Copia el <em>Template ID</em>.</div>
+                    </div>
+                    <div class="notif-step">
+                        <div class="notif-step-num">4</div>
+                        <div class="notif-step-text"><strong>Account → API Keys:</strong> Copia tu <em>Public Key</em>.</div>
+                    </div>
+                </div>
+            </details>
+
             <div class="form-group">
                 <label>Tu Correo Electrónico (Receptor)</label>
-                <input type="email" id="emailjs-to-email" class="form-control" placeholder="ejemplo@correo.com">
+                <input type="email" id="emailjs-to-email" class="form-control" placeholder="ejemplo@correo.com" autocomplete="email">
             </div>
             <div class="form-group">
                 <label>Public Key (EmailJS)</label>
-                <input type="text" id="emailjs-key" class="form-control" placeholder="Ej. v9x_abc123">
+                <input type="text" id="emailjs-key" class="form-control" placeholder="Ej. v9x_abc123" autocomplete="off">
             </div>
             <div class="form-group">
                 <label>Service ID</label>
-                <input type="text" id="emailjs-service" class="form-control" placeholder="Ej. service_abc123">
+                <input type="text" id="emailjs-service" class="form-control" placeholder="Ej. service_abc123" autocomplete="off">
             </div>
             <div class="form-group">
                 <label>Template ID</label>
-                <input type="text" id="emailjs-template" class="form-control" placeholder="Ej. template_xyz">
+                <input type="text" id="emailjs-template" class="form-control" placeholder="Ej. template_xyz" autocomplete="off">
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn btn-outline btn-sm" onclick="testEmailJS_manual()">🧪 Enviar correo de prueba</button>
+                <div id="email-test-result" style="font-size:0.78rem; display:flex; align-items:center; color:var(--text-light);"></div>
+            </div>
+        </div>
+
+        <!-- ── TAB: SCHEDULE ── -->
+        <div class="notif-center-panel" id="npanel-schedule" role="tabpanel">
+            <p style="font-size:0.82rem; color:var(--text-light); margin-bottom:12px;">
+                Configura con cuántos días de anticipación quieres recibir alertas y con qué frecuencia se revisan tus pagos.
+            </p>
+
+            <div class="form-group">
+                <label style="font-weight:700; font-size:0.88rem;">📅 Alertar con anticipación de:</label>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;" id="days-before-group">
+                    <label class="schedule-option" style="flex:1; min-width:80px;" id="opt-days-1">
+                        <input type="radio" name="daysBefore" value="1"> 1 día
+                    </label>
+                    <label class="schedule-option" id="opt-days-3" style="flex:1; min-width:80px;">
+                        <input type="radio" name="daysBefore" value="3" checked> 3 días
+                    </label>
+                    <label class="schedule-option" id="opt-days-7" style="flex:1; min-width:80px;">
+                        <input type="radio" name="daysBefore" value="7"> 7 días
+                    </label>
+                    <label class="schedule-option" id="opt-days-14" style="flex:1; min-width:80px;">
+                        <input type="radio" name="daysBefore" value="14"> 14 días
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top:14px;">
+                <label style="font-weight:700; font-size:0.88rem;">🔁 Frecuencia de revisión automática:</label>
+                <div style="margin-top:8px;" id="check-freq-group">
+                    <label class="schedule-option" id="freq-open">
+                        <input type="radio" name="checkFreq" value="open" checked> <div><strong>Al abrir la app</strong><br><small style="color:var(--text-light);">Solo revisa cuando abres esta página.</small></div>
+                    </label>
+                    <label class="schedule-option" id="freq-hourly">
+                        <input type="radio" name="checkFreq" value="hourly"> <div><strong>Cada hora</strong><br><small style="color:var(--text-light);">Revisa cada 60 minutos mientras la app esté abierta.</small></div>
+                    </label>
+                    <label class="schedule-option" id="freq-30min">
+                        <input type="radio" name="checkFreq" value="30min"> <div><strong>Cada 30 minutos</strong><br><small style="color:var(--text-light);">Revisión frecuente mientras la app esté abierta.</small></div>
+                    </label>
+                </div>
+            </div>
+
+            <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px; margin-top:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <div style="flex:1; font-size:0.82rem; color:var(--text-light);" id="schedule-status-msg">
+                    Última revisión: <strong id="last-check-time">Al cargar la app</strong>
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="forzarRevisionNotifs()">🔄 Revisar ahora</button>
             </div>
         </div>
 
@@ -1323,6 +1482,97 @@ let editDailyItems = [];
 // ==========================================
 // MÓDULO ALERTAS (PUSH, EMAILJS, WHATSAPP)
 // ==========================================
+// ── NOTIFICATION CENTER ────────────────────────────────────────────
+// Interval handle for periodic checks
+let _notifIntervalHandle = null;
+
+function switchNotifTab(tab) {
+    document.querySelectorAll('.notif-center-tab').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+    });
+    document.querySelectorAll('.notif-center-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('ntab-' + tab).classList.add('active');
+    document.getElementById('ntab-' + tab).setAttribute('aria-selected', 'true');
+    document.getElementById('npanel-' + tab).classList.add('active');
+}
+
+function getPushStatusInfo() {
+    if (!("Notification" in window)) {
+        return { state: 'unsupported', label: '❌ No soportado', desc: 'Tu navegador no admite notificaciones push.' };
+    }
+    if (window.location.protocol === 'file:') {
+        return { state: 'blocked', label: '⚠ Protocolo local (file://)', desc: 'Las notificaciones push requieren HTTPS o localhost. Sirve el archivo desde un servidor web.' };
+    }
+    const p = Notification.permission;
+    if (p === 'granted') return { state: 'active', label: '✔ Activas', desc: 'Recibirás alertas del sistema cuando la app esté abierta.' };
+    if (p === 'denied') return { state: 'blocked', label: '🚫 Bloqueadas', desc: 'El navegador bloqueó los permisos. Debes habilitarlos manualmente en la configuración del sitio.' };
+    return { state: 'pending', label: '⏳ Sin configurar', desc: 'Aún no has concedido permiso para notificaciones.' };
+}
+
+function renderPushStatusArea() {
+    const info = getPushStatusInfo();
+    const stateClass = { active: 'active', blocked: 'inactive', unsupported: 'unsupported', pending: 'pending' }[info.state] || 'unsupported';
+    document.getElementById('push-status-area').innerHTML = `
+        <span class="notif-status-badge ${stateClass}">${info.label}</span>
+        <p style="font-size:0.8rem; color:var(--text-light); margin-bottom:10px;">${info.desc}</p>`;
+    const btn = document.getElementById('btnReqPush');
+    const testBtn = document.getElementById('btnTestPush');
+    const blockedHelp = document.getElementById('push-blocked-help');
+    if (info.state === 'active') {
+        btn.textContent = '✔ Notificaciones Activadas';
+        btn.className = 'btn btn-success';
+        if (testBtn) testBtn.style.display = 'inline-flex';
+        if (blockedHelp) blockedHelp.style.display = 'none';
+    } else if (info.state === 'blocked' || info.state === 'unsupported') {
+        btn.textContent = '🔔 Habilitar Notificaciones';
+        btn.className = 'btn btn-outline';
+        if (testBtn) testBtn.style.display = 'none';
+        if (blockedHelp) blockedHelp.style.display = 'block';
+    } else {
+        btn.textContent = '🔔 Habilitar Notificaciones';
+        btn.className = 'btn';
+        if (testBtn) testBtn.style.display = 'none';
+        if (blockedHelp) blockedHelp.style.display = 'none';
+    }
+}
+
+function renderEmailStatusArea() {
+    const config = JSON.parse(localStorage.getItem('emailjs_config') || '{}');
+    const isConfigured = !!(config.key && config.service && config.template && config.email);
+    document.getElementById('email-status-area').innerHTML = `
+        <span class="notif-status-badge ${isConfigured ? 'active' : 'inactive'}">
+            ${isConfigured ? `✔ Configurado — ${config.email}` : '❌ Sin configurar'}
+        </span>`;
+}
+
+function renderScheduleStatus() {
+    const cfg = JSON.parse(localStorage.getItem('notif_schedule') || '{}');
+    const daysBefore = cfg.daysBefore || 3;
+    const freq = cfg.checkFreq || 'open';
+    
+    // Set radios
+    const dbRadio = document.querySelector(`[name="daysBefore"][value="${daysBefore}"]`);
+    if (dbRadio) dbRadio.checked = true;
+    const frRadio = document.querySelector(`[name="checkFreq"][value="${freq}"]`);
+    if (frRadio) frRadio.checked = true;
+
+    // Style options
+    document.querySelectorAll('#days-before-group .schedule-option').forEach(el => {
+        el.classList.toggle('selected', el.querySelector('input').checked);
+    });
+    document.querySelectorAll('#check-freq-group .schedule-option').forEach(el => {
+        el.classList.toggle('selected', el.querySelector('input').checked);
+    });
+
+    const lastCheck = localStorage.getItem('last_notif_check');
+    if (lastCheck) {
+        const d = new Date(lastCheck);
+        const el = document.getElementById('last-check-time');
+        if (el) el.textContent = d.toLocaleString('es-MX');
+    }
+}
+
 function abrirConfigAlertas() {
     const config = JSON.parse(localStorage.getItem('emailjs_config') || '{}');
     document.getElementById('emailjs-to-email').value = config.email || '';
@@ -1330,11 +1580,18 @@ function abrirConfigAlertas() {
     document.getElementById('emailjs-service').value = config.service || '';
     document.getElementById('emailjs-template').value = config.template || '';
     
-    if ("Notification" in window && Notification.permission === "granted") {
-        document.getElementById('btnReqPush').textContent = "Notificaciones Locales Activadas ✔";
-        document.getElementById('btnReqPush').classList.replace('btn-outline', 'btn-success');
-    }
+    renderPushStatusArea();
+    renderEmailStatusArea();
+    renderScheduleStatus();
     document.getElementById('configAlertsModal').classList.add('open');
+
+    // Live radio interactions
+    document.querySelectorAll('[name="daysBefore"], [name="checkFreq"]').forEach(radio => {
+        radio.onchange = () => {
+            document.querySelectorAll('#days-before-group .schedule-option').forEach(el => el.classList.toggle('selected', el.querySelector('input').checked));
+            document.querySelectorAll('#check-freq-group .schedule-option').forEach(el => el.classList.toggle('selected', el.querySelector('input').checked));
+        };
+    });
 }
 
 function guardarConfigAlertas() {
@@ -1345,23 +1602,116 @@ function guardarConfigAlertas() {
         template: document.getElementById('emailjs-template').value.trim()
     };
     localStorage.setItem('emailjs_config', JSON.stringify(config));
+
+    const daysBefore = document.querySelector('[name="daysBefore"]:checked')?.value || '3';
+    const checkFreq = document.querySelector('[name="checkFreq"]:checked')?.value || 'open';
+    localStorage.setItem('notif_schedule', JSON.stringify({ daysBefore: parseInt(daysBefore), checkFreq }));
+    
+    // Apply new schedule
+    applyNotifSchedule(checkFreq);
+
     document.getElementById('configAlertsModal').classList.remove('open');
-    showToast('✔ Configuración de alertas guardada', 'success');
+    showToast('✔ Configuración de notificaciones guardada', 'success');
+}
+
+function applyNotifSchedule(freq) {
+    if (_notifIntervalHandle) { clearInterval(_notifIntervalHandle); _notifIntervalHandle = null; }
+    if (freq === 'hourly') {
+        _notifIntervalHandle = setInterval(() => { checkNotifications(); localStorage.setItem('last_notif_check', new Date().toISOString()); }, 60 * 60 * 1000);
+    } else if (freq === '30min') {
+        _notifIntervalHandle = setInterval(() => { checkNotifications(); localStorage.setItem('last_notif_check', new Date().toISOString()); }, 30 * 60 * 1000);
+    }
+    localStorage.setItem('last_notif_check', new Date().toISOString());
+}
+
+function forzarRevisionNotifs() {
+    checkNotifications();
+    localStorage.setItem('last_notif_check', new Date().toISOString());
+    const el = document.getElementById('last-check-time');
+    if (el) el.textContent = new Date().toLocaleString('es-MX');
+    showToast('🔄 Revisión de notificaciones completada', 'success');
 }
 
 function requestLocalPushPermission() {
     if (!("Notification" in window)) {
-        return showToast('Tu navegador no soporta notificaciones push', 'error');
+        renderPushStatusArea();
+        return showToast('⚠ Tu navegador no soporta notificaciones push', 'error');
     }
-    Notification.requestPermission().then(permission => {
-        if (permission === "granted") {
-            document.getElementById('btnReqPush').textContent = "Notificaciones Locales Activadas ✔";
-            document.getElementById('btnReqPush').classList.replace('btn-outline', 'btn-success');
-            new Notification('¡Control de Deudas!', { body: 'Las alertas locales están activadas.' });
+    if (window.location.protocol === 'file:') {
+        renderPushStatusArea();
+        return showToast('⚠ Las notificaciones requieren HTTPS o localhost, no file://', 'error');
+    }
+    if (Notification.permission === 'denied') {
+        renderPushStatusArea();
+        return showToast('🚫 Notificaciones bloqueadas. Habilítalas en la configuración del navegador.', 'error');
+    }
+    if (Notification.permission === 'granted') {
+        renderPushStatusArea();
+        testPushNotification();
+        return;
+    }
+    // Request permission (handles both callback-style and Promise-style browsers)
+    const handler = (permission) => {
+        renderPushStatusArea();
+        if (permission === 'granted') {
+            showToast('✔ ¡Notificaciones activadas!', 'success');
+            setTimeout(() => testPushNotification(), 500);
         } else {
-            showToast('Permiso denegado para notificaciones', 'error');
+            showToast('🚫 Permiso denegado. Puedes habilitarlo desde la configuración del sitio.', 'error');
         }
-    });
+    };
+    try {
+        const result = Notification.requestPermission();
+        if (result && typeof result.then === 'function') {
+            result.then(handler).catch(() => { renderPushStatusArea(); showToast('⚠ Error al solicitar permisos', 'error'); });
+        } else {
+            // Old callback-based API
+            handler(result);
+        }
+    } catch (e) {
+        renderPushStatusArea();
+        showToast('⚠ Error al solicitar permisos de notificación', 'error');
+    }
+}
+
+function testPushNotification() {
+    if (!("Notification" in window) || Notification.permission !== 'granted') {
+        return showToast('⚠ Activa las notificaciones primero', 'error');
+    }
+    try {
+        const opts = {
+            body: '✅ Las notificaciones push están funcionando correctamente en tu dispositivo.',
+            icon: 'https://cdn-icons-png.flaticon.com/512/2950/2950664.png',
+            tag: 'test-notif-' + Date.now(),
+            requireInteraction: false
+        };
+        const n = new Notification('🔔 Control de Deudas — Prueba', opts);
+        n.onclick = () => { window.focus(); n.close(); };
+        showToast('🔔 Notificación de prueba enviada', 'success');
+    } catch (e) {
+        showToast('⚠ Error al enviar notificación: ' + e.message, 'error');
+    }
+}
+
+function dispararNotificacionLocal(title, msg, tagId) {
+    if (!("Notification" in window)) return;
+    if (Notification.permission !== 'granted') return;
+    if (window.location.protocol === 'file:') return;
+    const notifKey = `push_sent_${tagId}`;
+    if (localStorage.getItem(notifKey)) return;
+    try {
+        const n = new Notification(title, {
+            body: msg,
+            icon: 'https://cdn-icons-png.flaticon.com/512/2950/2950664.png',
+            tag: tagId,
+            requireInteraction: false,
+            silent: false
+        });
+        n.onclick = () => { window.focus(); n.close(); };
+        localStorage.setItem(notifKey, 'true');
+    } catch (e) {
+        console.warn('Push notification error:', e.message);
+    }
 }
 
 function enviarCorreoEmailJS(debt, diffDays) {
@@ -1369,11 +1719,17 @@ function enviarCorreoEmailJS(debt, diffDays) {
     if (!config.key || !config.service || !config.template || !config.email) return;
 
     const notifKey = `email_sent_${debt.id}_${debt.fechaLimite}`;
-    if (localStorage.getItem(notifKey)) return; // Ya se envió para este vencimiento
+    if (localStorage.getItem(notifKey)) return;
 
-    emailjs.init(config.key);
-    
-    let estado = diffDays < 0 ? 'VENCIDO' : `Vence en ${diffDays} día(s)`;
+    const schedule = JSON.parse(localStorage.getItem('notif_schedule') || '{}');
+    const daysBefore = schedule.daysBefore || 3;
+    if (diffDays > daysBefore && diffDays >= 0) return; // Only send within the configured window
+
+    try {
+        emailjs.init(config.key);
+    } catch(e) { return; }
+
+    let estado = diffDays < 0 ? `⚠ VENCIDO hace ${Math.abs(diffDays)} día(s)` : (diffDays === 0 ? '🚨 VENCE HOY' : `📅 Vence en ${diffDays} día(s)`);
     let printMonto = debt.tipo === 'plazos' ? (debt.monto/debt.mesesTotal) : (debt.tipo === 'unica' || debt.tipo === 'diario' ? debt.monto - (debt.pagado||0) : debt.monto);
 
     emailjs.send(config.service, config.template, {
@@ -1381,20 +1737,46 @@ function enviarCorreoEmailJS(debt, diffDays) {
         debt_name: debt.nombre,
         debt_amount: formatMoney(printMonto),
         due_date: formatDateDMY(debt.fechaLimite),
-        status: estado
+        status: estado,
+        days_remaining: diffDays < 0 ? `Atrasado ${Math.abs(diffDays)} días` : (diffDays === 0 ? 'HOY' : `${diffDays} días restantes`),
+        category: debt.categoria || ''
     }).then(() => {
         localStorage.setItem(notifKey, 'true');
-        console.log('Recordatorio por correo enviado: ' + debt.nombre);
-    }).catch(err => console.error('Error enviando EmailJS:', err));
+        console.log('📧 Recordatorio enviado:', debt.nombre);
+    }).catch(err => console.warn('EmailJS error:', err));
 }
 
-function dispararNotificacionLocal(title, msg, tagId) {
-    if ("Notification" in window && Notification.permission === "granted") {
-        const notifKey = `push_sent_${tagId}`;
-        if (!localStorage.getItem(notifKey)) {
-            new Notification(title, { body: msg, icon: 'https://cdn-icons-png.flaticon.com/512/2950/2950664.png', tag: tagId });
-            localStorage.setItem(notifKey, 'true');
-        }
+function testEmailJS_manual() {
+    const config = {
+        email: document.getElementById('emailjs-to-email').value.trim(),
+        key: document.getElementById('emailjs-key').value.trim(),
+        service: document.getElementById('emailjs-service').value.trim(),
+        template: document.getElementById('emailjs-template').value.trim()
+    };
+    const result = document.getElementById('email-test-result');
+    if (!config.key || !config.service || !config.template || !config.email) {
+        if (result) result.innerHTML = '<span style="color:var(--danger);">⚠ Completa todos los campos primero.</span>';
+        return;
+    }
+    if (result) result.innerHTML = '<span style="color:var(--text-light);">⏳ Enviando correo de prueba...</span>';
+    try {
+        emailjs.init(config.key);
+        emailjs.send(config.service, config.template, {
+            to_email: config.email,
+            debt_name: 'Deuda de Ejemplo',
+            debt_amount: '$1,500.00',
+            due_date: formatDateDMY(getHoyStr()),
+            status: '🧪 Esto es un correo de prueba',
+            days_remaining: '3 días restantes',
+            category: 'Prueba'
+        }).then(() => {
+            if (result) result.innerHTML = `<span style="color:var(--success);">✔ Correo de prueba enviado a <strong>${config.email}</strong></span>`;
+            showToast('✔ Correo de prueba enviado correctamente', 'success');
+        }).catch(err => {
+            if (result) result.innerHTML = `<span style="color:var(--danger);">❌ Error: ${err.text || err.message || 'Credenciales incorrectas'}</span>`;
+        });
+    } catch(e) {
+        if (result) result.innerHTML = `<span style="color:var(--danger);">❌ Error: ${e.message}</span>`;
     }
 }
 
@@ -1668,10 +2050,54 @@ function init() {
     updateUI();
     renderLastSavedInfo();
 
+    // Apply saved notification schedule (interval checks)
+    const savedSchedule = JSON.parse(localStorage.getItem('notif_schedule') || '{}');
+    if (savedSchedule.checkFreq && savedSchedule.checkFreq !== 'open') {
+        applyNotifSchedule(savedSchedule.checkFreq);
+    }
+
+    // Try to register an inline Service Worker for background push (best-effort, HTTPS only)
+    if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+        _registerInlineSW();
+    }
+
     // UX MODULE INIT
     enhanceToastA11y();
     enhanceNavA11y();
     initOnboarding();
+}
+
+function _registerInlineSW() {
+    const swCode = `
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+self.addEventListener('push', function(event) {
+    const data = event.data ? event.data.json() : { title: 'Control de Deudas', body: 'Tienes pagos próximos.' };
+    event.waitUntil(self.registration.showNotification(data.title, {
+        body: data.body,
+        icon: 'https://cdn-icons-png.flaticon.com/512/2950/2950664.png',
+        badge: 'https://cdn-icons-png.flaticon.com/512/2950/2950664.png',
+        tag: data.tag || 'deuda-notif',
+        requireInteraction: true,
+        actions: [{ action: 'view', title: 'Ver deuda' }]
+    }));
+});
+self.addEventListener('notificationclick', function(event) {
+    event.notification.close();
+    event.waitUntil(clients.openWindow(self.location.origin));
+});
+    `;
+    try {
+        const blob = new Blob([swCode], { type: 'application/javascript' });
+        const swUrl = URL.createObjectURL(blob);
+        navigator.serviceWorker.register(swUrl).then(reg => {
+            console.log('✅ Service Worker registrado para notificaciones push.');
+        }).catch(e => {
+            console.warn('Service Worker no disponible en este contexto:', e.message);
+        });
+    } catch(e) {
+        console.warn('Service Worker inline no soportado:', e.message);
+    }
 }
 
 function normalizarDeudas() {
@@ -1722,6 +2148,9 @@ function checkNotifications() {
     let changed = false;
     const hoy = new Date();
     hoy.setHours(0,0,0,0);
+    const schedule = JSON.parse(localStorage.getItem('notif_schedule') || '{}');
+    const daysBefore = schedule.daysBefore || 7; // default 7 days to match existing logic
+
     debts.forEach(d => {
         const status = getStatus(d);
         if (status.class === 'pagado') return;
@@ -1731,12 +2160,14 @@ function checkNotifications() {
         let type = null, title = '', msg = '';
         
         if (diffDays < 0) {
-            type = 'vencido'; title = '¡Pago Atrasado!';
-            msg = `Tu pago de "${d.nombre}" venció el ${d.fechaLimite}.`;
-        } else if (diffDays <= 7) {
-            type = 'proximo'; title = 'Pago Próximo';
-            const diasFaltan = diffDays === 0 ? 'HOY' : `en ${diffDays} día(s)`;
-            msg = `Se acerca tu fecha límite de "${d.nombre}" (${diasFaltan}).`;
+            type = 'vencido'; title = '⚠ ¡Pago Atrasado!';
+            msg = `Tu pago de "${d.nombre}" venció el ${formatDateDMY(d.fechaLimite)}.`;
+        } else if (diffDays === 0) {
+            type = 'proximo'; title = '🚨 ¡Pago HOY!';
+            msg = `Hoy vence tu pago de "${d.nombre}" por ${formatMoney(d.tipo === 'plazos' ? d.monto/d.mesesTotal : d.monto - (d.pagado||0))}.`;
+        } else if (diffDays <= daysBefore) {
+            type = 'proximo'; title = '📅 Pago Próximo';
+            msg = `"${d.nombre}" vence en ${diffDays} día(s) el ${formatDateDMY(d.fechaLimite)}.`;
         }
         
         if (type) {
@@ -1746,11 +2177,11 @@ function checkNotifications() {
                 changed = true;
             }
 
-            // Disparar notificaciones locales/Push OS
+            // Disparar notificaciones push
             dispararNotificacionLocal(title, msg, uniqueId);
 
-            // Disparar EmailJS solo si faltan 3 días o está vencida
-            if (diffDays <= 3) {
+            // Disparar EmailJS dentro del rango configurado
+            if (diffDays <= (schedule.daysBefore || 3)) {
                 enviarCorreoEmailJS(d, diffDays);
             }
         }
@@ -1758,6 +2189,7 @@ function checkNotifications() {
     if (notifications.length > 30) { notifications = notifications.slice(0, 30); changed = true; }
     if (changed || notifications.length === 0) persistNotifs();
     else renderNotificaciones();
+    localStorage.setItem('last_notif_check', new Date().toISOString());
 }
 
 function marcarNotifPagada(debtId) {
